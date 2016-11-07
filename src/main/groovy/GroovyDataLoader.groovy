@@ -2,7 +2,8 @@
  * Created by SHAOPENGXIANG on 2016/11/3.
  */
 //@Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7' )
-import com.mongodb.*;
+import com.mongodb.*
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.ListCollectionsIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -23,10 +24,21 @@ import static groovyx.net.http.Method.*
 
 import java.util.ArrayList;
 import java.util.List;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+import com.mongodb.MongoException;
+import com.mongodb.util.JSON;
 
 //@Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7' )
 class GroovyDataLoader {
     def dbHost, dbPort, dbName, dbUser, dbPwd;
+
 
     public GroovyDataLoader() {
         init();
@@ -41,6 +53,8 @@ class GroovyDataLoader {
         System.out.println("documents:" + documents.toString());
 //        db.createCollection("testcollections");
         MongoCollection<Document> testcollections = db.getCollection("testcollections");
+
+        return testcollections;
     }
 
     private init() {
@@ -68,11 +82,11 @@ class GroovyDataLoader {
 
     private void loadOnlineData() {
 
-//        def file = new File("hanzi_1.txt")
-//
-//        if (file.exists())
-//            file.delete()
-//        def printWriter = file.newPrintWriter() //
+        def file = new File("hanzi_1.txt")
+
+        if (file.exists())
+            file.delete()
+        def printWriter = file.newPrintWriter() //
 
 //        def http = new HTTPBuilder()
 //        http.request('http://52.27.4.79:8080', GET, TEXT) { req ->
@@ -95,8 +109,6 @@ class GroovyDataLoader {
 //                println 'Not found'
 //            }
 //        }
-//        printWriter.flush();
-//        printWriter.close();
 
 
         def text = new URL("http://52.27.4.79:8080/docs/hanzi_1_20161103.txt")
@@ -105,10 +117,18 @@ class GroovyDataLoader {
                 useCaches: true,
                 allowUserInteraction: false,
                 requestProperties: ['Connection': 'close'])
-        println text;
+        //println text;
+        printWriter.println(text);
+        printWriter.flush();
+        printWriter.close();
 
-        def split = text.split("\r\n");
-//        for(0)
+        def split = text.split("\r\n ");
+
+        for (item in split) {
+            println item
+        }
+        println "text.length:" + text.length();
+        println "split.length:" + split.length;
     }
 
     private MongoClient getMongoClient() {
@@ -118,11 +138,88 @@ class GroovyDataLoader {
         return mongoClient;
     }
 
+    Map<String, String> wordMap = new HashMap<>();
+
+    private void handleLocalData() {
+
+        new File("hanzi_1.txt").eachLine { line ->
+
+            if (line == null || line.trim().length() == 0) {
+                //do nothing
+            } else {
+                //println "Line: ${line}"
+                handleOneLine(line);
+            }
+        }
+    }
+
+    private void handleOneLine(String line) {
+
+        int index = 1;
+        for (int i = 0; i < line.length() - 1; i++) {
+            char at = line.charAt(i);
+            if (at < 'A' || at > 'z') {
+                index = i;
+                break;
+            }
+        }
+        String key = line.substring(0, index);
+        String words = line.substring(index)
+        println key + ":" + words;
+        wordMap.put(key, words);
+    }
+
+    void buildJson() {
+
+        MongoCollection<Document> collections = connectToDb();
+
+
+        int totalWordCount = 0;
+        def set = wordMap.keySet();
+        for (key in set) {
+            String words = wordMap.get(key)
+            totalWordCount += words.length();
+
+            List<String> wordList = new ArrayList<>()
+            for(int j=0;j<words.length();j++){
+                wordList.add(""+words.charAt(j));
+            }
+
+
+            BasicDBObject query = new BasicDBObject();
+            query.put("key", key);
+            def find = collections.find(query)
+
+            if (find.size() == 0) {
+                println key + " not exist!"
+
+                Document document = new Document();
+                document.put("key", key);
+                document.put("words", wordList);
+
+
+                collections.insertOne(document);
+            } else {
+                println key + " exist!"
+            }
+        }
+
+        println "totalwordcount:" + totalWordCount;
+
+
+    }
+
     public static void main(String[] args) throws Exception {
 
         GroovyDataLoader loader = new GroovyDataLoader();
-        loader.connectToDb();
+//        loader.connectToDb();
 
-        loader.loadOnlineData();
+        //loader.loadOnlineData();
+
+        loader.handleLocalData();
+
+        loader.buildJson();
     }
+
+
 }
