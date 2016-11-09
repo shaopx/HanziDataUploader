@@ -45,16 +45,20 @@ class GroovyDataLoader {
     }
 
     def connectToDb() {
+
+
         MongoClient mongoClient = getMongoClient();
+//        MongoCollection<Document> testcollections = db.getCollection("testcollections");
+
 
         MongoDatabase db = mongoClient.getDatabase(dbName);
-        ListCollectionsIterable<Document> documents = db.listCollections();
-        System.out.println("db.name:" + db.getName());
-        System.out.println("documents:" + documents.toString());
+//        ListCollectionsIterable<Document> documents = db.listCollections();
+//        System.out.println("db.name:" + db.getName());
+//        System.out.println("documents:" + documents.toString());
 //        db.createCollection("testcollections");
-        MongoCollection<Document> testcollections = db.getCollection("testcollections");
 
-        return testcollections;
+
+        return db;
     }
 
     private init() {
@@ -138,9 +142,9 @@ class GroovyDataLoader {
         return mongoClient;
     }
 
-    Map<String, String> wordMap = new HashMap<>();
+    public Map<String, String> wordMap = new HashMap<>();
 
-    private void handleLocalData() {
+    public void handleLocalData() {
 
         new File("hanzi_1.txt").eachLine { line ->
 
@@ -153,7 +157,7 @@ class GroovyDataLoader {
         }
     }
 
-    private void handleOneLine(String line) {
+    protected void handleOneLine(String line) {
 
         int index = 1;
         for (int i = 0; i < line.length() - 1; i++) {
@@ -171,7 +175,8 @@ class GroovyDataLoader {
 
     void buildJson() {
 
-        MongoCollection<Document> collections = connectToDb();
+        MongoDatabase db = connectToDb();
+        MongoCollection<Document> collections = db.getCollection("testcollections");
 
 
         int totalWordCount = 0;
