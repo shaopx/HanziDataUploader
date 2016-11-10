@@ -7,6 +7,12 @@ import groovyx.net.http.Method
 import org.bson.Document
 import groovyx.net.http.HTTPBuilder
 import static groovyx.net.http.ContentType.URLENC
+import groovyx.net.http.HTTPBuilder
+import static groovyx.net.http.Method.GET
+import static groovyx.net.http.Method.POST
+import static groovyx.net.http.ContentType.TEXT
+import groovyx.net.http.HttpURLClient
+import static groovyx.net.http.ContentType.JSON
 
 /**
  * Created by shaopengxiang on 2016/11/9.
@@ -35,6 +41,7 @@ class HanZiShiYiLoader extends GroovyDataLoader {
         }
 
 
+
     }
 
 
@@ -52,57 +59,19 @@ class HanZiShiYiLoader extends GroovyDataLoader {
             document.put("word", word);
             document.put("yin", fayin);
 
-//            def http = new HTTPBuilder( 'http://dict-mobile.iciba.com' )
-//            def postBody = [word: word] // will be url-encoded
-//
-//            http.post( path: '/interface/index.php?c=word&list=100,24,8,21,22,10,9,15,2,5,14,4,6,7&client=1&timestamp=1478683173&sign=948cfe904719a74b&uuid=7932d1177242405a913685ef25023fb3&sv=android6.0&v=8.4.6&uid=', body: postBody) { resp ->
-//
-//                println "POST Success: ${resp.statusLine}"
-//            }
+            def http = new HTTPBuilder('http://dict-mobile.iciba.com/')
+            http.request( POST , JSON ) {
+                uri.path = '/interface/index.php'
+                uri.query = [c:'word', list:'100,24,8,21,22,10,9,15,2,5,14,4,6,7', client:'1', timestamp:'1478683173', sign:'948cfe904719a74b']
+                requestContentType = URLENC
+                body =  [word: word]
 
-//            def http = new HTTPBuilder( 'http://dict-mobile.iciba.com' )
-//            http.request( Method.POST ) {
-//                uri.path = '/interface/index.php?c=word&list=100,24,8,21,22,10,9,15,2,5,14,4,6,7&client=1&timestamp=1478683173&sign=948cfe904719a74b&uuid=7932d1177242405a913685ef25023fb3&sv=android6.0&v=8.4.6&uid='
-//                requestContentType = ContentType.TEXT
-//                body =  [word: word]
-//
-//                response.success = { resp ->
-//                    println "POST response status: ${resp.statusLine}"
-//                }
-//            }
-            def http = new HTTPBuilder('http://127.0.0.1:8080/')
-            def postBody = [word: 'aaaa'] // will be url-encoded
-
-            http.post(path: '/postword', body: postBody,
-                    requestContentType: URLENC) { resp ->
-
-                println "POST Success: ${resp.statusLine}"
-
+                response.success = { resp, json ->
+                    println "POST response status: ${json.message.chinese}"
+                    document.put("data", json.message);
+                    shiyiCollection.insertOne(document);
+                }
             }
-
-//            def ret = null
-//            def http = new HTTPBuilder('http://dict-mobile.iciba.com')
-//
-//            // perform a POST request, expecting TEXT response
-//            http.request('http://dict-mobile.iciba.com', Method.POST, ContentType.TEXT) { req ->
-//                uri.path = '/interface/index.php?c=word&list=100,24,8,21,22,10,9,15,2,5,14,4,6,7&client=1&timestamp=1478683173&sign=948cfe904719a74b&uuid=7932d1177242405a913685ef25023fb3&sv=android6.0&v=8.4.6&uid='
-//                uri.query = [word: word]
-//                headers.'User-Agent' = "Mozilla/5.0 Firefox/3.0.4"
-//                headers.Accept = 'application/json'
-//
-//                // response handler for a success response code
-//                response.success = { resp, reader ->
-//                    println "response status: ${resp.statusLine}"
-//                }
-//
-//                response.'404' = {
-//                    println 'Not found'
-//                }
-//            }
-
-            //document.put("data", data);
-
-            //shiyiCollection.insertOne(document);
         } else {
             println word + " exist!"
         }
