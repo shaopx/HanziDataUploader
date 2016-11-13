@@ -18,7 +18,12 @@ public class MyCrawler extends WebCrawler {
     private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|gif|jpg"
             + "|png|mp3|mp3|zip|gz))$");
 
+    public static void main(String[] args) throws Exception {
 
+        String href = "http://www.runoob.com/regexp/regexp-syntax.jpg";
+        boolean b = FILTERS.matcher(href).matches();
+        System.out.println("matched:" + b);
+    }
     private static File storageFolder;
     private static File htmlStorageFolder;
     private static File textStorageFolder;
@@ -82,6 +87,10 @@ public class MyCrawler extends WebCrawler {
             if (resourcename.equals("/")) {
                 resourcename = "rootindex.html";
             }
+            resourcename = resourcename.replace('?', '_');
+            resourcename = resourcename.replace('/', '_');
+            resourcename = resourcename.replace('&', '_');
+            resourcename = resourcename.replace('=', '_');
             // store image
             String htmlFileName = htmlStorageFolder.getAbsolutePath() + "/" + resourcename;
             String textFileName = textStorageFolder.getAbsolutePath() + "/" + toTextSuffix(resourcename);
@@ -166,8 +175,5 @@ public class MyCrawler extends WebCrawler {
     }
 
 
-    public static void main(String[] args) throws Exception {
 
-
-    }
 }

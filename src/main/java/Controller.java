@@ -8,8 +8,9 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
  * Created by shaopengxiang on 2016/11/11.
  */
 public class Controller {
-    public static final String targetDomain = "http://www.guwen-online.com/";
-    public static final String localPath = "guwen";
+//    public static final String targetDomain = "http://www.gushiwen.org/";
+//    public static final String seed = "http://www.gushiwen.org/wenyan/";
+//    public static final String localPath = "guwen";
 
     public static void main(String[] args) throws Exception {
         String crawlStorageFolder = "./data/crawl/root";
@@ -31,14 +32,14 @@ public class Controller {
          * URLs that are fetched and then the crawler starts following links
          * which are found in these pages
          */
-        controller.addSeed(targetDomain);
+        controller.addSeed(GuwenCrawler.seed);
 //        controller.addSeed("http://www.ics.uci.edu/~welling/");
 //        controller.addSeed("http://www.ics.uci.edu/");
-        MyCrawler.configure(targetDomain, "./data/local/" + localPath);
+//        MyCrawler.configure(targetDomain, "./data/local/" + localPath);
         /*
          * Start the crawl. This is a blocking operation, meaning that your code
          * will reach the line after this only when crawling is finished.
          */
-        controller.start(MyCrawler.class, numberOfCrawlers);
+        controller.start(GuwenCrawler.class, numberOfCrawlers);
     }
 }
