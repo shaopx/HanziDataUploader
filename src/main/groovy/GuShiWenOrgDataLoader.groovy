@@ -27,7 +27,7 @@ class GuShiWenOrgDataLoader {
     def http = new HTTPBuilder('http://app.gushiwen.org/')
 
     def perform() {
-        for (i in 27258..73208){
+        for (i in 56560..73208){
             postData(i);
 //            sleep(1000);
         }
@@ -60,6 +60,7 @@ class GuShiWenOrgDataLoader {
                         }
                         fn += ".json"
                         fn = formatString(fn)
+                        fn = fn.replace("\r", "").replace("\n", "")
                     } catch (ex) {
                         ex.printStackTrace()
                     }

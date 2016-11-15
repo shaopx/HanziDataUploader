@@ -1,3 +1,5 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
@@ -20,10 +22,13 @@ import static groovyx.net.http.ContentType.JSON
  */
 class GTHtmlAnalyzer {
 
-    def cookie = 'JSESSIONID=11A79DBE9E3143489D27815ADBE563E6'
+    def type = "song"
+    def cookie = 'JSESSIONID=33C675732BAAE0514B7133401337B10E'
     def http = new HTTPBuilder()
 
-    def dir = "c:/dev/data/poem/tang/";
+    def dir = "c:/dev/data/poem/"+type+"/";
+
+    def builder = new JsonBuilder()
 
     def perform() {
 
@@ -32,7 +37,7 @@ class GTHtmlAnalyzer {
             file.mkdirs()
         }
 
-        for (i in 30000..57593) {
+        for (i in 1..254240) {
             requestPoem(i);
         }
 
@@ -42,8 +47,8 @@ class GTHtmlAnalyzer {
     def requestPoem(uid) {
         try {
             http.request('http://202.106.125.44:8082', GET, TEXT) { req ->
-                uri.path = '/tang/fullText.jsp'
-                uri.query = [a: '1', e: '0', u: uid, b: '4']
+                uri.path = "/"+type+"/fullText.jsp"
+                uri.query = [a: '1', e: '1', u: uid, b: '4']
                 headers.'User-Agent' = "Mozilla/5.0 Firefox/3.0.4"
                 headers.Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
                 headers.Cookie = cookie
@@ -184,18 +189,29 @@ class GTHtmlAnalyzer {
         println '作者简介:' + poemAuthorDesc
         //println text
 
-        def poemFileName = uid + "_" + poemAuthor + "_" + poemTitle + ".txt";
-        StringBuilder sb = new StringBuilder()
-        sb.append(poemTitle).append("\r\n").
-                append("备注:").append(poemRemark).append("\r\n").
-                append("作者:").append(poemAuthor).append("\r\n").
-                append(poemContent).append("\r\n").
-                append("详细:").append(poemContentExplain).append("\r\n").
-                append("作者简介:").append(poemAuthorDesc)
+        def poemFileName = uid + "_" + poemAuthor + "_" + poemTitle + ".json";
+
+
+        builder.poem{
+            n poemTitle
+            a poemAuthor
+            r poemRemark
+            c poemContent
+            x poemContentExplain
+            b poemAuthorDesc
+        }
+
+//        StringBuilder sb = new StringBuilder("{")
+//        sb.append('"name":"').append(poemTitle).
+//                append("<remark>").append(poemRemark).append("</remark>").
+//                append("<author>").append(poemAuthor).append("</author>").
+//                append("<content>").append(poemContent).append("</content>").
+//                append("<xiangxi>").append(poemContentExplain).append("</xiangxi>").
+//                append("<aboutauthor>").append(poemAuthorDesc).append("</aboutauthor>").append("}")
 
 //        String fileData = sb.replaceAll("，", ",");
 //        fileData = fileData.replaceAll("。", ".");
-        saveToFile(uid, poemFileName, formatString(sb.toString()))
+        saveToFile(uid, poemFileName, JsonOutput.prettyPrint(builder.toString()))
 
 
     }
