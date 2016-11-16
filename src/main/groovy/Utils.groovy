@@ -4,12 +4,16 @@
 class Utils {
 
     static String getFileSubDir(rootdir, uid) {
-        for (int i = 1000; i < 1000000; i += 1000) {
-            if (uid <i) {
-                return rootdir + "/" + i + "/";
+        if (uid instanceof Integer) {
+            for (int i = 1000; i < 1000000; i += 1000) {
+                if (uid < i) {
+                    return rootdir + "/" + i + "/";
+                }
             }
+            return rootdir + "/big/";
+        } else {
+            return rootdir + "/" + uid + "/";
         }
-        return rootdir + "/big/";
     }
 
     static void saveToFile(rootdir, uid, fn, content) {
@@ -23,14 +27,14 @@ class Utils {
             printWriter.println(content)
         }
 
-        if(!fn.startsWith("error")){
+        if (!fn.startsWith("error")) {
             new File(subDir, "error_" + uid + ".txt").delete()
         }
 
     }
 
 
-    static void errorText(rootdir, int uid, String text) {
+    static void errorText(rootdir, uid, text) {
         System.err.println("error")
         saveToFile(rootdir, uid, "error_" + uid + ".txt", text);
     }
@@ -41,7 +45,7 @@ class Utils {
                 replace("</span>", ")").replace("\t", "").replace("{", "(").replace("}", ")").replace("\\", "_").replace("/", "");
     }
 
-    public static void main(args){
+    public static void main(args) {
         def subDir = getFileSubDir('d:/dev', 3457)
         println subDir
     }
