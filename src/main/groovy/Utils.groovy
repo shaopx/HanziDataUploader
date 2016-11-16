@@ -4,7 +4,7 @@
 class Utils {
 
     static String getFileSubDir(rootdir, uid) {
-        for (int i = 1000; i < 100000; i += 1000) {
+        for (int i = 1000; i < 1000000; i += 1000) {
             if (uid <i) {
                 return rootdir + "/" + i + "/";
             }
@@ -23,12 +23,15 @@ class Utils {
             printWriter.println(content)
         }
 
-        new File(subDir, "error_" + uid + ".txt").delete()
+        if(!fn.startsWith("error")){
+            new File(subDir, "error_" + uid + ".txt").delete()
+        }
+
     }
 
 
     static void errorText(rootdir, int uid, String text) {
-//        System.err.println("error")
+        System.err.println("error")
         saveToFile(rootdir, uid, "error_" + uid + ".txt", text);
     }
 
