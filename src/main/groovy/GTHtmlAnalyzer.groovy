@@ -1,43 +1,31 @@
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder
-import com.mongodb.BasicDBObject
-import com.mongodb.client.MongoCollection
-import com.mongodb.client.MongoDatabase
-import groovyx.net.http.ContentType
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.Method
-import org.bson.Document
-import groovyx.net.http.HTTPBuilder
-import static groovyx.net.http.ContentType.URLENC
-import groovyx.net.http.HTTPBuilder
+import org.cyberneko.html.parsers.SAXParser
+
 import static groovyx.net.http.Method.GET
-import static groovyx.net.http.Method.POST
 import static groovyx.net.http.ContentType.TEXT
-import groovyx.net.http.HttpURLClient
-import static groovyx.net.http.ContentType.JSON
+import static Utils.*
 
 /**
  * Created by shaopengxiang on 2016/11/14.
  */
 class GTHtmlAnalyzer {
+    def cookie = 'JSESSIONID=8AF0D6C4EAD48DF647F5A41A05E4ACB2'
 
     def type = "song"
-    def cookie = 'JSESSIONID=33C675732BAAE0514B7133401337B10E'
     def http = new HTTPBuilder()
-
-    def dir = "c:/dev/data/poem/"+type+"/";
-
+    def rootDir = "c:/dev/data/poem/" + type + "/";
     def builder = new JsonBuilder()
 
-    def perform() {
+    void perform() {
 
-        def file = new File(dir);
+        def file = new File(rootDir);
         if (!file.exists()) {
             file.mkdirs()
         }
 
-        for (i in 1..254240) {
+        for (i in 99000..99000) {
             requestPoem(i);
         }
 
@@ -47,7 +35,7 @@ class GTHtmlAnalyzer {
     def requestPoem(uid) {
         try {
             http.request('http://202.106.125.44:8082', GET, TEXT) { req ->
-                uri.path = "/"+type+"/fullText.jsp"
+                uri.path = "/" + type + "/fullText.jsp"
                 uri.query = [a: '1', e: '1', u: uid, b: '4']
                 headers.'User-Agent' = "Mozilla/5.0 Firefox/3.0.4"
                 headers.Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -55,8 +43,9 @@ class GTHtmlAnalyzer {
                 headers.Connection = 'keep-alive'
 
                 response.success = { resp, reader ->
-                    //println reader.text
-                    handleHtml(uid, reader.text.toString())
+                    def htmlStr = reader.text
+                    println htmlStr
+                    handleHtml(uid, htmlStr)
                 }
 
                 response.'404' = {
@@ -65,20 +54,20 @@ class GTHtmlAnalyzer {
             }
         } catch (ex) {
             ex.printStackTrace()
-            errorText(uid, "uid:"+uid+", error:" + ex.getMessage());
+            errorText(rootDir, uid, "uid:" + uid + ", error:" + ex.getMessage());
         }
     }
 
 
-    def handleHtml(int uid, String text) {
+    def handleHtml(int uid, String rawHtmlText) {
 
         def startTag = "<div style=\"clear: both; margin-bottom: 25px;\">"
-        int startIndex = text.indexOf(startTag)
-        if (startIndex == -1 || startIndex + startTag.length() > text.length()) {
-            errorText(uid, text);
+        int startIndex = rawHtmlText.indexOf(startTag)
+        if (startIndex == -1 || startIndex + startTag.length() > rawHtmlText.length()) {
+            errorText(rootDir, uid, rawHtmlText);
             return;
         }
-        text = text.substring(startIndex + startTag.length())
+        def text = rawHtmlText.substring(startIndex + startTag.length())
 
         int firstDivEndIndex = text.indexOf("</div>")
         def poemDiv = text.substring(0, firstDivEndIndex)
@@ -89,14 +78,14 @@ class GTHtmlAnalyzer {
         def beginIndex = poemDiv.indexOf(tagBegin)
         def endIndex = poemDiv.indexOf(tagEnd)
         if (beginIndex == -1 || endIndex == -1) {
-            errorText(uid, text);
+            errorText(rootDir, uid, text);
             return;
         }
         def poemTitle = poemDiv.substring(beginIndex + tagBegin.length(), endIndex).trim()
         poemTitle = formatString(poemTitle)
         println '诗名:' + poemTitle
 
-        poemDiv = poemDiv.substring(endIndex+tagEnd.length());
+        poemDiv = poemDiv.substring(endIndex + tagEnd.length());
 
 //        println 'poemDiv:' + poemDiv
 
@@ -107,15 +96,15 @@ class GTHtmlAnalyzer {
 
             int eIndex = poemDiv.indexOf("</p>", sIndex)
             if (eIndex <= sIndex) {
-                errorText(uid, text);
+                errorText(rootDir, uid, text);
                 return;
             }
 
-            def str = poemDiv.substring(sIndex+3, eIndex)
+            def str = poemDiv.substring(sIndex + 3, eIndex)
             //println 'str:' + str
 
             poemContent += str
-            poemDiv = poemDiv.substring(eIndex+4)
+            poemDiv = poemDiv.substring(eIndex + 4)
             //println 'poemDiv:' + poemDiv
         }
         poemContent = formatString(poemContent)
@@ -126,14 +115,14 @@ class GTHtmlAnalyzer {
 
         def poemRemark = ''
         def poemContentExplain = ''
-        if(text.contains("帶註釋文本")){
+        if (text.contains("帶註釋文本")) {
             //诗备注
             tagBegin = "<h3 class=\"TEXT_DARK\">"
             tagEnd = "</h3>"
             beginIndex = text.indexOf(tagBegin)
             endIndex = text.indexOf(tagEnd)
             if (beginIndex == -1 || endIndex == -1) {
-                errorText(uid, text);
+                errorText(rootDir, uid, text);
                 return;
             }
             poemRemark = text.substring(beginIndex + tagBegin.length(), endIndex).trim()
@@ -148,17 +137,15 @@ class GTHtmlAnalyzer {
             beginIndex = text.indexOf(tagBegin)
             endIndex = text.indexOf(tagEnd)
             if (beginIndex == -1 || endIndex == -1) {
-                errorText(uid, text);
+                errorText(rootDir, uid, text);
                 return;
             }
-            poemContentExplain= text.substring(beginIndex + tagBegin.length(), endIndex).trim()
+            poemContentExplain = text.substring(beginIndex + tagBegin.length(), endIndex).trim()
             poemContentExplain = formatString(poemContentExplain)
             println '诗内容备注:' + poemContentExplain
 
             text = text.substring(endIndex + tagEnd.length())
         }
-
-
 
         //诗作者
         tagBegin = "作者:"
@@ -166,7 +153,7 @@ class GTHtmlAnalyzer {
         beginIndex = text.indexOf(tagBegin)
         endIndex = text.indexOf(tagEnd)
         if (beginIndex == -1 || endIndex == -1) {
-            errorText(uid, text);
+            errorText(rootDir, uid, text);
             return;
         }
         def poemAuthor = text.substring(beginIndex + tagBegin.length(), endIndex).trim()
@@ -181,7 +168,7 @@ class GTHtmlAnalyzer {
         beginIndex = text.indexOf(tagBegin)
         endIndex = text.lastIndexOf(tagEnd)
         if (beginIndex == -1 || endIndex == -1) {
-            errorText(uid, text);
+            errorText(rootDir, uid, text);
             return;
         }
         def poemAuthorDesc = text.substring(beginIndex + tagBegin.length(), endIndex).trim()
@@ -191,8 +178,8 @@ class GTHtmlAnalyzer {
 
         def poemFileName = uid + "_" + poemAuthor + "_" + poemTitle + ".json";
 
-
-        builder.poem{
+        // 构建json格式的poem
+        builder.poem {
             n poemTitle
             a poemAuthor
             r poemRemark
@@ -201,53 +188,78 @@ class GTHtmlAnalyzer {
             b poemAuthorDesc
         }
 
-//        StringBuilder sb = new StringBuilder("{")
-//        sb.append('"name":"').append(poemTitle).
-//                append("<remark>").append(poemRemark).append("</remark>").
-//                append("<author>").append(poemAuthor).append("</author>").
-//                append("<content>").append(poemContent).append("</content>").
-//                append("<xiangxi>").append(poemContentExplain).append("</xiangxi>").
-//                append("<aboutauthor>").append(poemAuthorDesc).append("</aboutauthor>").append("}")
+        saveToFile(rootDir, uid, poemFileName, JsonOutput.prettyPrint(builder.toString()))
 
-//        String fileData = sb.replaceAll("，", ",");
-//        fileData = fileData.replaceAll("。", ".");
-        saveToFile(uid, poemFileName, JsonOutput.prettyPrint(builder.toString()))
+        println "-----------------------------------------------"
+        def parser = new SAXParser()
 
+        def page = new XmlSlurper(parser).parseText(rawHtmlText)
 
-    }
+//        println 'poem name:'+ page.h3[0].text()
+//        println 'poem author:'+ page.h4[0].text()
 
-    def formatString(String str) {
-        return str.replaceAll("，", ",").replaceAll("。", ".").
-                replace("<span class=\"comment\">", "(").
-                replace("</span>", ")").replace("\t", "").replace("{", "(").replace("}", ")").replace("\\", "_").replace("/", "");
-    }
+        def ptitle = page.depthFirst().find { it.@class.equals("TEXT_DARK") }.text()
+        println 'poem name:' + ptitle
 
-    def errorText(int uid, String text) {
-        System.err.println("error")
-        saveToFile(uid, "error_" + uid + ".txt", text);
-    }
+        def pauthor = page.depthFirst().find { it.@class.equals("TEXT_LIGHT") }.text()
+        println 'poem author:' + pauthor
 
-    def getFileSubDir(int uid) {
-        for (int i = 1000; i < 100000; i += 1000) {
-            if (uid <i) {
-                return dir + "/" + i + "/";
-            }
-        }
-        return dir + "/big/";
-    }
+        def nnn = page.'**'.find { it.name() == 'DIV' && it.@style == 'clear: both; margin-bottom: 25px;' }.H3
+        println 'poem nnn:' + nnn
 
-    def saveToFile(uid, fn, content) {
-        def subDir = getFileSubDir(uid);
-        def file = new File(subDir);
-        if (!file.exists()) {
-            file.mkdirs()
+        def names = page."**".findAll { it.@class == 'TEXT_DARK' }
+        println 'poem names:' + names
+        def pn, pa, pr;
+        if (names.size() == 2) {
+            pn = names[0]
+            pa = names[1]
+            pr = pn
+        } else if (names.size() == 3) {
+            pn = names[0]
+            pr = names[1]
+            pa = names[2]
+        } else {
+            // error!!!
         }
 
-        new File(subDir, fn).withPrintWriter { printWriter ->
-            printWriter.println(content)
+        def contentDiv = page.'**'.find {
+            it.name() == 'DIV' && it.@style == 'clear: both; margin-bottom: 25px;'
+        }."**".findAll { it.name() == 'P' && it.@class == '' }
+        println 'poem contentDiv:' + contentDiv
+
+        def divList = page."**".findAll {
+            it.name() == 'DIV' && (it.@class == '' || it.@class == 'comment') && it.@style == ''
+        }
+        println 'poem divList.size:' + divList.size()
+        if (divList.size() == 2) {
+            def pxiangxi = divList[0]
+            println 'pxiangxi:' + pxiangxi.getClass().getName()
+            println 'pxiangxi:' + pxiangxi.localText()
+            println 'children[0]:' + pxiangxi.children()[0]
+            println 'children[1]:' + pxiangxi.children()[1]
+            println 'children[1]:' + pxiangxi.children()[1].children().size()
+            println 'children[1]:' + pxiangxi.children()[1].children()
+            println 'pxiangxi.children()[1].children():' + pxiangxi.children()[1].children().getClass().getName()
+            def pabauthor = divList[1].P.text();
+            println 'pabauthor:' + pabauthor
+        } else if (divList.size() == 1) {
+            def pabauthor = divList[0].P.text();
+            println 'pabauthor:' + pabauthor
+        } else {
+            //error!!!
         }
 
-        new File(subDir, "error_" + uid + ".txt").delete()
+        def spans = page."**".findAll {
+            it.name() == 'SPAN' && (it.@class == '' || it.@class == 'comment')
+        }
+        println 'poem spans:' + spans
+//        def teams =
+//                page.'**'.find{it.name() == 'DIV' && it.@style=='clear: both; margin-bottom: 25px;'}.
+//                /* (2) Folow the path */
+//                        DIV[0].H2.LI.collect{li->
+//                    /* (3) For each element in list get the title of the first anchor */
+//                    li.'**'.find{it.name() == 'A'}*.@title
+//                }.flatten()
     }
 
     public static void main(args) {
