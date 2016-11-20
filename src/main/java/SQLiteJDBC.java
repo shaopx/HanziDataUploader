@@ -36,14 +36,14 @@ public class SQLiteJDBC {
 //            stmt.executeUpdate(insertSql);
 
 
-            String sql = "select _id,shangxi from shangxi where _id =900 ";
+            String sql = "select _id,shangxi from shangxi where _id =1 ";
             ResultSet rs = stmt.executeQuery(sql);
             String shangxiStr = "";
             while (rs.next()) {
                 int id = rs.getInt("_id");
                 byte[] bytes = rs.getBytes(2);
-                System.out.println("id:" + id);
-
+                System.out.println("id:" + id +", lenth:"+bytes.length);
+                System.out.println("shangxi is :"+ bytes);
                 if (bytes != null) {
                     int i = 16 * (bytes.length / 16);
                     if (i >= 16) {
