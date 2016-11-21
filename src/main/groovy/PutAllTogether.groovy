@@ -12,8 +12,8 @@ import java.nio.file.Paths
  * Created by shaopengxiang on 2016/11/18.
  */
 class PutAllTogether {
-    //def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
-    def dbLocation = 'D:\\data\\kkpoem\\dict\\'
+    def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
+    //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
     def dir = new File(dbLocation)
 
     def cols = ['_id', 'mingcheng', 'zuozhe', 'shipin', 'ticai', 'chaodai', 'guojia', 'fenlei', 'jieduan', 'keben', 'congshu', 'chuchu', 'zhaiyao', 'yuanwen']
@@ -55,7 +55,7 @@ class PutAllTogether {
 
         def count = 0
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id>=10000"
+        def sql_id_list = "select * from poem where _id>0"
 
         sql_poem.eachRow(sql_id_list) {
             row ->
