@@ -36,8 +36,15 @@ class Utils {
     }
 
 
-    static void errorText(rootdir, uid, text) {
+    static String formatException(Throwable ex){
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        def exception = sw.toString();
+    }
 
+    static void errorText(rootdir, uid, text) {
+        uid = uid.toString()
         def errorFileName = formatString(uid+"")
         System.err.println("error" + errorFileName)
         saveToFile(rootdir, uid, "error_" + errorFileName + ".txt", text);

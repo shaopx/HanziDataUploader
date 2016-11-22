@@ -1,5 +1,7 @@
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
+import com.mongodb.client.MongoCursor
+import com.mongodb.util.JSON
 import groovy.sql.Sql
 import org.bson.Document
 
@@ -15,6 +17,8 @@ class PutAllTogether {
     def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
     //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
     def dir = new File(dbLocation)
+    MongoCollection<Document> tsjsCollection;
+
 
     def cols = ['_id', 'mingcheng', 'zuozhe', 'shipin', 'ticai', 'chaodai', 'guojia', 'fenlei', 'jieduan', 'keben', 'congshu', 'chuchu', 'zhaiyao', 'yuanwen']
 
@@ -41,7 +45,8 @@ class PutAllTogether {
         copyDbs()
 
         def db = new GroovyDataLoader().connectToDb()
-        MongoCollection<Document> poemCollection = db.getCollection("poem");
+        MongoCollection<Document> poemCollection = db.getCollection("poem",BasicDBObject.class);
+        tsjsCollection = db.getCollection("tsjs",BasicDBObject.class);
 
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
@@ -55,16 +60,18 @@ class PutAllTogether {
 
         def count = 0
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id>0"
+        def sql_id_list = "select * from poem where _id >0"
 
         sql_poem.eachRow(sql_id_list) {
             row ->
                 def pid = row["_id"]
+                def pname = row["mingcheng"]
+                def pauthor = row["zuozhe"]
                 query.put("_id", pid);
                 def find = poemCollection.find(query)
 
                 if (find.size() == 0) {
-                    Document document = new Document();
+                    BasicDBObject document = new BasicDBObject();
                     document.put("pid", "" + row["_id"]);
                     cols.each { col ->
                         if (col != '_id')
@@ -91,6 +98,49 @@ class PutAllTogether {
                         }
 
                     }
+
+
+                    String shangxi = document.get("shangxi");
+                    ArrayList<BasicDBObject> shagnxiList = new ArrayList<>();
+                    if(shangxi.length()>0){
+                        BasicDBObject shangxidata = new BasicDBObject();
+                        shangxidata.put("shangxi", shangxi)
+                        shangxidata.put("src", " gscd")
+                        shagnxiList.add(shangxidata)
+                    }
+
+                    BasicDBObject tsjsQuery = new BasicDBObject();
+                    tsjsQuery.put("n", pname);
+                    tsjsQuery.put("a", pauthor);
+
+                    BasicDBObject fields = new BasicDBObject();
+                    fields.put("sx", 1);
+
+                    def tsjsfind = tsjsCollection.find(tsjsQuery)
+                    String tsjsshangxi = ""
+                    println "tsjsfind.getName() :"+tsjsfind.getClass().getName()
+                    if (tsjsfind.size() != 0) {
+                        MongoCursor<Document> cursor = tsjsfind.iterator();
+                        try {
+                            while (cursor.hasNext()) {
+                                Document doc = cursor.next();
+
+                                tsjsshangxi +=doc.get("sx");
+                            }
+                        } finally {
+                            cursor.close();
+                        }
+
+                        if(tsjsshangxi.length()>0){
+                            BasicDBObject shangxidata = new BasicDBObject();
+                            shangxidata.put("shangxi", tsjsshangxi)
+                            shangxidata.put("src", " tsjs")
+                            shagnxiList.add(shangxidata)
+                        }
+
+                        //println tsjsshangxi
+                    }
+                    document.put("shangxi", shagnxiList);
 
                     poemCollection.insertOne(document);
                 } else {
