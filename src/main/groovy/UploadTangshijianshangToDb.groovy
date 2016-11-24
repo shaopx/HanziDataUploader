@@ -17,7 +17,7 @@ class UploadTangshijianshangToDb {
 
     void upload(){
         def db = new GroovyDataLoader().connectToDb()
-        tsjsCollection = db.getCollection("tsjs",BasicDBObject.class);
+        tsjsCollection = db.getCollection("tsjs");
 
         if (dir.isDirectory()) {
             dir.eachFileRecurse { file ->
@@ -32,7 +32,7 @@ class UploadTangshijianshangToDb {
         def strJson = file.text
         BasicDBObject document = (BasicDBObject) JSON.parse(strJson);
         def poem = document.get("poem");
-        BasicDBObject tsjsDocument = new BasicDBObject();
+        Document tsjsDocument = new Document();
         tsjsDocument.put("n", poem.get("n"));
         tsjsDocument.put("a", poem.get("a"));
         tsjsDocument.put("c", poem.get("c"));

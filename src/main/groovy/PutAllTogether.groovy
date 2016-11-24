@@ -1,9 +1,11 @@
+import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoCursor
 import com.mongodb.util.JSON
 import groovy.sql.Sql
 import org.bson.Document
+import org.bson.*
 
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
@@ -45,8 +47,8 @@ class PutAllTogether {
         copyDbs()
 
         def db = new GroovyDataLoader().connectToDb()
-        MongoCollection<Document> poemCollection = db.getCollection("poem",BasicDBObject.class);
-        tsjsCollection = db.getCollection("tsjs",BasicDBObject.class);
+        MongoCollection<Document> poemCollection = db.getCollection("poem");
+        tsjsCollection = db.getCollection("tsjs");
 
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
@@ -60,22 +62,23 @@ class PutAllTogether {
 
         def count = 0
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >0"
+        def sql_id_list = "select * from poem where _id >0 "
 
         sql_poem.eachRow(sql_id_list) {
             row ->
                 def pid = row["_id"]
                 def pname = row["mingcheng"]
                 def pauthor = row["zuozhe"]
+                def yuanwen = row['yuanwen']
                 query.put("_id", pid);
                 def find = poemCollection.find(query)
 
                 if (find.size() == 0) {
-                    BasicDBObject document = new BasicDBObject();
-                    document.put("pid", "" + row["_id"]);
+                    Document document = new Document();
+                    document.append("pid", "" + row["_id"]);
                     cols.each { col ->
                         if (col != '_id')
-                            document.put("$col", "" + row[col]);
+                            document.append("$col", "" + row[col]);
                     }
 
                     sqlmap.each { tablename, sql ->
@@ -90,10 +93,10 @@ class PutAllTogether {
                                 int i = m*16;
                                 if (i >= 16) {
                                     String result = doSomething(bytes, i);
-                                    document.put(tablename, "" + result);
+                                    document.append(tablename, "" + result);
                                 }
                             } else {
-                                document.put(tablename, "");
+                                document.append(tablename, "");
                             }
                         }
 
@@ -101,20 +104,27 @@ class PutAllTogether {
 
 
                     String shangxi = document.get("shangxi");
-                    ArrayList<BasicDBObject> shagnxiList = new ArrayList<>();
+                    ArrayList<Document> shagnxiList = new ArrayList<>();
+//                    BasicDBList shagnxiList = new BasicDBList();
                     if(shangxi.length()>0){
-                        BasicDBObject shangxidata = new BasicDBObject();
+                        Document shangxidata = new Document();
                         shangxidata.put("shangxi", shangxi)
                         shangxidata.put("src", " gscd")
                         shagnxiList.add(shangxidata)
+
                     }
 
                     BasicDBObject tsjsQuery = new BasicDBObject();
                     tsjsQuery.put("n", pname);
                     tsjsQuery.put("a", pauthor);
 
-                    BasicDBObject fields = new BasicDBObject();
-                    fields.put("sx", 1);
+//                    BasicDBObject regexQuery = new BasicDBObject();
+//                    regexQuery.put("n",
+//                            new BasicDBObject("$regex", "TestEmployee_[3]")
+//                                    .append("$options", "i"));
+
+//                    BasicDBObject fields = new BasicDBObject();
+//                    fields.put("sx", 1);
 
                     def tsjsfind = tsjsCollection.find(tsjsQuery)
                     String tsjsshangxi = ""
@@ -132,7 +142,7 @@ class PutAllTogether {
                         }
 
                         if(tsjsshangxi.length()>0){
-                            BasicDBObject shangxidata = new BasicDBObject();
+                            Document shangxidata = new Document();
                             shangxidata.put("shangxi", tsjsshangxi)
                             shangxidata.put("src", " tsjs")
                             shagnxiList.add(shangxidata)
@@ -140,7 +150,7 @@ class PutAllTogether {
 
                         //println tsjsshangxi
                     }
-                    document.put("shangxi", shagnxiList);
+                    document.append("shangxis", shagnxiList);
 
                     poemCollection.insertOne(document);
                 } else {
