@@ -73,8 +73,8 @@ class XiGuLoader {
         def title = getTitle(content)
         println "题目:" + title
 
-        if (!author || !title) {
-            errorText(rootDir, "error", "" + url)
+        if (!author || !title || author.toString().contains("http:")|| title.toString().contains("http:")) {
+            //errorText(rootDir, "error", "" + url)
             errorLinks << url
             return;
         }
@@ -98,6 +98,11 @@ class XiGuLoader {
 
         def fname = author + "_" + title + ".json"
         fname = formatString(fname)
+        fname = fname.replace("<","")
+        fname = fname.replace(">","")
+        fname = fname.replace("\"","")
+        fname = fname.replace(":","")
+        fname = fname.replace("=","")
         saveToFile(rootDir, "gushi", fname, finalData)
     }
 
