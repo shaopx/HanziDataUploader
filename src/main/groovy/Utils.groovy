@@ -26,7 +26,7 @@ class Utils {
         }
 
         new File(subDir, fn).withPrintWriter { printWriter ->
-            printWriter.println(content)
+            printWriter.append(content)
         }
 
         if (!fn.startsWith("error")) {
@@ -86,6 +86,39 @@ class Utils {
         }
 
         return result;
+    }
+
+
+    public static String getUrlTextContent(String rootDir, String url){
+        try {
+
+            URL getUrl = new URL(url);
+            HttpURLConnection connection = (HttpURLConnection) getUrl.openConnection();
+            // 进行连接，但是实际上get request要在下一句的connection.getInputStream()函数中才会真正发到
+            // 服务器
+            connection.connect();
+            // 取得输入流，并使用Reader读取
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "GBK"));
+            String lines;
+            StringBuilder sb = new StringBuilder()
+            while ((lines = reader.readLine()) != null) {
+                //lines = new String(lines.getBytes(), "utf-8");
+                //System.out.println(lines);
+                sb.append(lines+"\n")
+            }
+            reader.close();
+            // 断开连接
+            connection.disconnect();
+
+           return sb.toString();
+        } catch (Throwable ex) {
+            println "exception when request" + url
+            ex.printStackTrace()
+            def exception = formatException(ex);
+            errorText(rootDir, url, "error:" + exception);
+            //errorLinks.add(link)
+        }
     }
 
     public static void main(args) {
