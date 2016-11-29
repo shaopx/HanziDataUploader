@@ -14,7 +14,9 @@ class Utils {
             }
             return rootdir + "/big/";
         } else {
-            return rootdir + "/" + uid + "/";
+            if (uid)
+                return rootdir + "/" + uid + "/";
+            return rootdir+"/"
         }
     }
 
@@ -46,8 +48,15 @@ class Utils {
     static void errorText(rootdir, uid, text) {
         uid = uid.toString()
         def errorFileName = formatString(uid+"")
-        System.err.println("error" + errorFileName)
-        saveToFile(rootdir, uid, "error_" + errorFileName + ".txt", text);
+        errorFileName= formatString(errorFileName)
+        errorFileName = errorFileName.replace(":", "")
+        errorFileName = errorFileName.replace("/", "_")
+        errorFileName = errorFileName.replace("\\", "_")
+        errorFileName = errorFileName.replace("<","")
+        errorFileName = errorFileName.replace(">","")
+        errorFileName = errorFileName.replace("=","")
+        System.err.println("error:" + errorFileName)
+        saveToFile(rootdir, '', "error_" + errorFileName + ".txt", text);
     }
 
     static String formatString(String str) {
@@ -99,7 +108,7 @@ class Utils {
             connection.connect();
             // 取得输入流，并使用Reader读取
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "GBK"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
             String lines;
             StringBuilder sb = new StringBuilder()
             while ((lines = reader.readLine()) != null) {

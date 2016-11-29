@@ -3,6 +3,9 @@ import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder
 import org.cyberneko.html.parsers.SAXParser
 
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 import static Utils.errorText
 import static Utils.formatException
 import static Utils.errorText
@@ -24,7 +27,7 @@ class XiGuLoader {
     def indexLinkPrefix = 'gushi/list_90_'
 
     def rootDir = "c:/dev/data/poem/xigutang/";
-    def allUrlFileName = rootDir + "list/all_poemslink.txt";
+    def allUrlFileName = rootDir + "list/all_poemslink_1.txt";
 
     //def tags=['【作品介绍】':'intro', '【原文】':'yuanwen', '【注释】':'zhushi', '【作者介绍】':'zuozhejieshao','【繁体对照】':'']
 
@@ -47,9 +50,10 @@ class XiGuLoader {
         new File(allUrlFileName).eachLine {
             url ->
                 println url
-                def content = getUrlTextContent(rootDir, url);
-
                 try {
+                    def content = getUrlTextContent(rootDir, url);
+
+
                     parsePoemHtml(url, content)
                 } catch (Throwable ex) {
                     println "exception when " + url
@@ -79,7 +83,7 @@ class XiGuLoader {
             return;
         }
 
-        def poemData = getYuanWen(content)
+        def poemData = parsePoemText(url, content, author, title)
         //println "原文:" + poemData.get("【原文】")
 
 
@@ -106,7 +110,7 @@ class XiGuLoader {
         saveToFile(rootDir, "gushi", fname, finalData)
     }
 
-    def getYuanWen(String text) {
+    def parsePoemText(String url, String text, String author, String title) {
         def parser = new SAXParser()
 
         def page = new XmlSlurper(parser).parseText(text)
@@ -117,10 +121,10 @@ class XiGuLoader {
 
         def divNode = divs[0]
         def divStr = divNode.toString()
-        println divStr
+        //println divStr
 
         //println '----------------------------------------'
-        def matcher = divStr =~ ~/\s+【(.*?)】(\n)*/
+        def matcher = divStr =~ ~/\s*【(.*?)】(\n)*/
         def tags = []
         if (matcher) {
             //println line
@@ -128,6 +132,7 @@ class XiGuLoader {
             matcher.each {
                 //println it[1]
                 def tag = it[0].toString().trim()
+
                 if (!(tag in tags))
                     tags << tag
             }
@@ -139,13 +144,65 @@ class XiGuLoader {
         for (int i = 0; i < tags.size(); i++) {
             def fromTag = tags.get(i)
             def toTag = i < tags.size() - 1 ? tags.get(i + 1) : null
-            def tagValue = getSubstrBetweenTags(divStr, fromTag, toTag);
-            println fromTag + ":" + tagValue
-            poemData[fromTag.toString()] = tagValue.toString()
+            if(fromTag.toString().trim().equals("【繁体对照】")){
+                toTag = null;
+            }
+
+            def tagValue = getSubstrBetweenTags(divStr, fromTag, toTag).toString();
+            fromTag = getCleanTag(fromTag.toString())
+            if(fromTag.equals("原文")){
+                tagValue = getCleanYuanWen(url, tagValue,author, title)
+            }
+            //println fromTag + ":" + tagValue
+            poemData[fromTag] = tagValue.toString()
+
+            if(fromTag.toString().trim().equals("繁体对照")){
+                break
+            }
         }
 
 
         return poemData
+    }
+
+
+    String getCleanYuanWen(String url, String text, String author, String title){
+//        def lineList = []
+//        text.eachLine { line ->
+//            lineList<<line
+//        }
+//
+//        println lineList
+//        if(lineList[0].equals(title)||(title.length()>3) && lineList[0].toString().startsWith(line)){
+//            lineList.remove(0)
+//        }
+//
+//        if(lineList[0].toString().contains("作者：") && lineList[0].toString().contains(author)){
+//            lineList.remove(0)
+//        }
+//
+//        String result = ""
+//        lineList.each {
+//            result+
+//        }
+        Pattern pattern = Pattern.compile(".*作者：.*"+author+"(.*)", Pattern.DOTALL)
+        def matcher = pattern.matcher(text)
+        if(matcher.find()){
+            text = matcher.group(1).trim()
+            text = text.replace("\n\n", "\n")
+        } else {
+            errorLinks<<url
+        }
+
+        return text
+    }
+
+    String getCleanTag(String tag){
+        if(tag==null) return ''
+        if(tag.startsWith("【")) tag = tag.substring(1)
+        if(tag.endsWith("】")) tag = tag.substring(0, tag.length()-1)
+        tag = tag.trim()
+        return tag;
     }
 
     String getSubstrBetweenTags(String text, String tag1, String tag2) {
@@ -233,8 +290,28 @@ class XiGuLoader {
             }
         }
 
+        if (authorlist.size() < 1) {
+            matcher = text =~ ~/》(.*?)唐诗赏析/
+            //println 'matcher:'+matcher.getClass().getName()
+            if (matcher) {
+                //println line
+
+                matcher.each {
+                    //println it
+                    author = it[1]
+                    //println author
+                    if (author && !(author in authorlist)) {
+                        authorlist << author
+                    }
+                }
+
+            }
+        }
+
         if (authorlist.size() > 0) {
             return authorlist[0]
+        } else {
+            return ""
         }
     }
 
