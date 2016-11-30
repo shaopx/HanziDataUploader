@@ -50,7 +50,7 @@ class BaiduBaike2Loader {
     void writeErrors() {
         def wordstr = ''
         notExistWords.each {
-            wordstr += it + "\n"
+            wordstr += (it + '\r\n')
         }
         errorText(rootDir, 'error', wordstr)
     }
