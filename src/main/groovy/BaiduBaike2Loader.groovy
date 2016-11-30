@@ -24,7 +24,7 @@ class BaiduBaike2Loader {
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id <50 "
+        def sql_id_list = "select * from poem where _id <200 and _id>=50 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -32,7 +32,7 @@ class BaiduBaike2Loader {
             def pid = row["_id"]
             println 'pid:'+pid+', pname:' + pname
 
-            requestWord(pname)
+            requestWord(pauthor, pname)
         }
         //requestWord('五弦弹－恶郑之夺雅也')
 
@@ -47,7 +47,7 @@ class BaiduBaike2Loader {
         errorText(rootDir, 'error', wordstr)
     }
 
-    def requestWord(word) {
+    def requestWord(zuozhe, word) {
         def url = "http://baike.baidu.com/item/" + word
         def text = getUrlTextContent(rootDir, url);
         //println text
@@ -176,6 +176,9 @@ class BaiduBaike2Loader {
         //println divMap.toString()
 
         def author = divMap['zuozhe']
+        if(author==null || author.equals("null")){
+            author = zuozhe
+        }
         def title = divMap['title']
 
         def builder = new JsonBuilder()
