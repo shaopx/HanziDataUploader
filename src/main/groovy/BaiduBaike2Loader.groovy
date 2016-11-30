@@ -24,7 +24,7 @@ class BaiduBaike2Loader {
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id ==2 "
+        def sql_id_list = "select * from poem where _id <50 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -93,11 +93,13 @@ class BaiduBaike2Loader {
 
             if (div in tags || div in engdTags) {
                 if (lastDivTag) {
-                    def content = ""
+                    StringBuilder sb = new StringBuilder()
                     divChilds.each { line ->
-                        content += line + "\n"
+                        println line
+                        sb.append(line).append("\n")
                     }
-                    println div.toString() + ":    key:" + lastDivTag + "--->" + content
+                    String content = sb.toString()
+                    println divChilds.size() + ":    key:" + lastDivTag + "--->" + content
 
                     def key = lastDivTag.toString().trim()
                     if (key.contains(word) && key.contains('原文') && key.contains('编辑')) {
@@ -114,8 +116,10 @@ class BaiduBaike2Loader {
                         key = 'yiwen'
                     } else if (key.contains(word) && key.contains('背景') && key.contains('编辑')) {
                         key = 'beijing'
-                    } else if (key.contains(word) && key.contains('出处') && key.contains('编辑')) {
+                    } else if (key.contains('出处') ) {
                         key = 'chuchu'
+                    } else if (key.contains('别名') ) {
+                        key = 'bieming'
                     }
 
                     divMap[key] = content.toString().trim()
@@ -149,6 +153,10 @@ class BaiduBaike2Loader {
                 name = 'niandai'
             } else if (name.contains('体裁')) {
                 name = 'ticai'
+            } else if (name.contains('出处') ) {
+                name = 'chuchu'
+            } else if (name.contains('别名') ) {
+                name = 'bieming'
             }
 
             println "" + name + ":" + value
