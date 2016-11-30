@@ -27,7 +27,7 @@ class Utils {
             file.mkdirs()
         }
 
-        new File(subDir, fn).withPrintWriter { printWriter ->
+        new File(subDir, fn).withWriter('UTF-8') { printWriter ->
             printWriter.append(content)
         }
 
