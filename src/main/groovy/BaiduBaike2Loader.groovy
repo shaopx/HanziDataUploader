@@ -1,5 +1,7 @@
+import com.mongodb.BasicDBObject
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
+import groovy.sql.Sql
 import org.cyberneko.html.parsers.SAXParser
 
 import static Utils.errorText
@@ -15,8 +17,24 @@ class BaiduBaike2Loader {
 
     def notExistWords = []
 
+    def dbLoader = new GroovyDataLoader()
+
     void perform() {
-        requestWord('五弦弹－恶郑之夺雅也')
+        dbLoader.copyDbs()
+
+        def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
+        BasicDBObject query = new BasicDBObject();
+        def sql_id_list = "select * from poem where _id ==2 "
+
+        sql_poem.eachRow(sql_id_list) { row ->
+            def pname = row["mingcheng"]
+            def pauthor = row["zuozhe"]
+            def pid = row["_id"]
+            println 'pid:'+pid+', pname:' + pname
+
+            requestWord(pname)
+        }
+        //requestWord('五弦弹－恶郑之夺雅也')
 
         writeErrors()
     }

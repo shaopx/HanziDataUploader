@@ -16,6 +16,9 @@ import groovyx.net.http.HTTPBuilder
 import groovyx.net.http.RESTClient
 import groovyx.net.http.HttpResponseDecorator
 
+import java.nio.file.Files
+import java.nio.file.Paths
+
 // ContentType static import
 import static groovyx.net.http.ContentType.*
 
@@ -39,26 +42,39 @@ import com.mongodb.util.JSON;
 class GroovyDataLoader {
     def dbHost, dbPort, dbName, dbUser, dbPwd;
 
+    def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
+    //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
+    def dir = new File(dbLocation)
 
     public GroovyDataLoader() {
         init();
     }
 
-    def connectToDb() {
-
+    def getOnlineDb() {
 
         MongoClient mongoClient = getMongoClient();
-//        MongoCollection<Document> testcollections = db.getCollection("testcollections");
-
 
         MongoDatabase db = mongoClient.getDatabase(dbName);
-//        ListCollectionsIterable<Document> documents = db.listCollections();
-//        System.out.println("db.name:" + db.getName());
-//        System.out.println("documents:" + documents.toString());
-//        db.createCollection("testcollections");
-
 
         return db;
+    }
+
+    void copyDbs() {
+
+        if (dir.isDirectory()) {
+            dir.eachFileRecurse { file ->
+                if (!(new File("" + file.getName()).exists()))
+                    Files.copy(Paths.get(file.getPath()), Paths.get("" + file.getName()))
+            }
+        }
+    }
+
+    void clearDbs(){
+        if (dir.isDirectory()) {
+            dir.eachFileRecurse { file ->
+                new File("./" + file.getName()).delete()
+            }
+        }
     }
 
     private init() {
@@ -84,56 +100,7 @@ class GroovyDataLoader {
         println "dbPwd:" + dbPwd;
     }
 
-    private void loadOnlineData() {
 
-        def file = new File("hanzi_1.txt")
-
-        if (file.exists())
-            file.delete()
-        def printWriter = file.newPrintWriter() //
-
-//        def http = new HTTPBuilder()
-//        http.request('http://52.27.4.79:8080', GET, TEXT) { req ->
-//            uri.path = '/docs/hanzi_1_20161103.txt'
-//            headers.'User-Agent' = "Mozilla/5.0 Firefox/3.0.4"
-//            headers.Accept = 'application/json'
-//
-//            response.success = { resp, reader ->
-////                assert resp.statusLine.statusCode == 200
-//                println "Got response: ${resp.statusLine}"
-//                println "Content-Type: ${resp.headers.'Content-Type'}"
-//                println reader.text
-//                if(reader.text!=null){
-//                    def trimText = reader.text.trim();
-//                    //printWriter.println(trimText);
-//                }
-//            }
-//
-//            response.'404' = {
-//                println 'Not found'
-//            }
-//        }
-
-
-        def text = new URL("http://52.27.4.79:8080/docs/hanzi_1_20161103.txt")
-                .getText(connectTimeout: 5000,
-                readTimeout: 10000,
-                useCaches: true,
-                allowUserInteraction: false,
-                requestProperties: ['Connection': 'close'])
-        //println text;
-        printWriter.println(text);
-        printWriter.flush();
-        printWriter.close();
-
-        def split = text.split("\r\n ");
-
-        for (item in split) {
-            println item
-        }
-        println "text.length:" + text.length();
-        println "split.length:" + split.length;
-    }
 
     private MongoClient getMongoClient() {
         final List<MongoCredential> credentialsList = new ArrayList<MongoCredential>();

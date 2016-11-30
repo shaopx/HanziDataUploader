@@ -16,38 +16,22 @@ import java.nio.file.Paths
  * Created by shaopengxiang on 2016/11/18.
  */
 class PutAllTogether {
-    def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
-    //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
-    def dir = new File(dbLocation)
+
     MongoCollection<Document> tsjsCollection;
 
 
     def cols = ['_id', 'mingcheng', 'zuozhe', 'shipin', 'ticai', 'chaodai', 'guojia', 'fenlei', 'jieduan', 'keben', 'congshu', 'chuchu', 'zhaiyao', 'yuanwen']
 
-    void copyDbs() {
 
-        if (dir.isDirectory()) {
-            dir.eachFileRecurse { file ->
-                if (!(new File("" + file.getName()).exists()))
-                    Files.copy(Paths.get(file.getPath()), Paths.get("" + file.getName()))
-            }
-        }
-    }
+    def dbLoader = new GroovyDataLoader()
 
-    void clearDbs(){
-        if (dir.isDirectory()) {
-            dir.eachFileRecurse { file ->
-                new File("./" + file.getName()).delete()
-            }
-        }
-    }
 
     def perform() {
 
-        copyDbs()
+        dbLoader.copyDbs()
 
-        def db = new GroovyDataLoader().connectToDb()
-        MongoCollection<Document> poemCollection = db.getCollection("poem");
+        def mongoDb = dbLoader.getOnlineDb()
+        MongoCollection<Document> poemCollection = mongoDb.getCollection("poem");
         tsjsCollection = db.getCollection("tsjs");
 
 
@@ -160,7 +144,7 @@ class PutAllTogether {
                 println '' + pid
         }
 
-        clearDbs()
+        dbLoader.clearDbs()
     }
 
 
