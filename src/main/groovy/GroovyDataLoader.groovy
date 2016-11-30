@@ -38,17 +38,17 @@ import com.mongodb.Mongo;
 import com.mongodb.MongoException;
 import com.mongodb.util.JSON;
 
-//@Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7' )
+@Singleton
 class GroovyDataLoader {
-    def dbHost, dbPort, dbName, dbUser, dbPwd;
+    static def dbHost, dbPort, dbName, dbUser, dbPwd;
 
-    def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
-    //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
-    def dir = new File(dbLocation)
-
-    public GroovyDataLoader() {
-        init();
+    static {
+        init()
     }
+
+    //def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
+    def dbLocation = 'D:\\data\\kkpoem\\dict\\'
+    def dir = new File(dbLocation)
 
     def getOnlineDb() {
 
@@ -69,7 +69,7 @@ class GroovyDataLoader {
         }
     }
 
-    void clearDbs(){
+    void clearDbs() {
         if (dir.isDirectory()) {
             dir.eachFileRecurse { file ->
                 new File("./" + file.getName()).delete()
@@ -77,7 +77,7 @@ class GroovyDataLoader {
         }
     }
 
-    private init() {
+    static void init() {
         new File("application.properties").eachLine { line ->
             println "Line: ${line}"
             if (line.startsWith("db.host:")) {
@@ -99,7 +99,6 @@ class GroovyDataLoader {
         println "dbUser:" + dbUser;
         println "dbPwd:" + dbPwd;
     }
-
 
 
     private MongoClient getMongoClient() {
@@ -153,8 +152,8 @@ class GroovyDataLoader {
             totalWordCount += words.length();
 
             List<String> wordList = new ArrayList<>()
-            for(int j=0;j<words.length();j++){
-                wordList.add(""+words.charAt(j));
+            for (int j = 0; j < words.length(); j++) {
+                wordList.add("" + words.charAt(j));
             }
 
 

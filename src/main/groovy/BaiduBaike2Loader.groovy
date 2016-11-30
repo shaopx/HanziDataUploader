@@ -17,22 +17,30 @@ class BaiduBaike2Loader {
 
     def notExistWords = []
 
-    def dbLoader = new GroovyDataLoader()
+    def dbLoader = GroovyDataLoader.instance
 
     void perform() {
         dbLoader.copyDbs()
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id <200 and _id>=50 "
+        def sql_id_list = "select * from poem where _id >0 and _id<1000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
             def pauthor = row["zuozhe"]
             def pid = row["_id"]
-            println 'pid:'+pid+', pname:' + pname
+            println 'pid:'+pid+', zuozhe:'+pauthor+', pname:' + pname
 
-            requestWord(pauthor, pname)
+            boolean succeed = requestWord(pid, pauthor, pname)
+            if(!succeed ){
+                def newName = pname.toString().replace('。','·')
+                succeed = requestWord(pid, pauthor, newName)
+                def names = newName.split('·')
+                names.each { name ->
+                    succeed = requestWord(pid, pauthor, name)
+                }
+            }
         }
         //requestWord('五弦弹－恶郑之夺雅也')
 
@@ -47,14 +55,14 @@ class BaiduBaike2Loader {
         errorText(rootDir, 'error', wordstr)
     }
 
-    def requestWord(zuozhe, word) {
+    boolean requestWord(pid, zuozhe, word) {
         def url = "http://baike.baidu.com/item/" + word
         def text = getUrlTextContent(rootDir, url);
         //println text
-        if (text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
-            println "[" + word + ']   不存在!'
+        if (!text || text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
+            println '[' +pid+', '+ word + ']   不存在!'
             notExistWords << word
-            return;
+            return false;
         }
 
         def parser = new SAXParser()
@@ -70,6 +78,19 @@ class BaiduBaike2Loader {
         def ddList = page."**".findAll {
             it.name() == 'DD' && it.@class == 'basicInfo-item value'
         }
+
+
+        def summaryDivs = page."**".findAll {
+            it.name() == 'DD' && it.@class == 'lemma-summary'
+        }
+
+        def summary = ''
+        if (summaryDivs) {
+            summaryDivs.each {
+                summary += it.toString()
+            }
+        }
+
 
 
 
@@ -95,26 +116,28 @@ class BaiduBaike2Loader {
                 if (lastDivTag) {
                     StringBuilder sb = new StringBuilder()
                     divChilds.each { line ->
-                        println line
+                        //println line
                         sb.append(line).append("\n")
                     }
                     String content = sb.toString()
-                    println divChilds.size() + ":    key:" + lastDivTag + "--->" + content
+                    //println divChilds.size() + ":    key:" + lastDivTag + "--->" + content
 
                     def key = lastDivTag.toString().trim()
                     if (key.contains(word) && key.contains('原文') && key.contains('编辑')) {
                         key = 'yuanwen'
-                    } else if (key.contains(word) && key.contains('作者简介') && key.contains('编辑')) {
+                    } else if ( key.contains('作者简介') && key.contains('编辑')) {
                         key = 'zzjj'
-                    } else if (key.contains(word) && key.contains('作品鉴赏') && key.contains('编辑')) {
+                    } else if (key.contains('作品鉴赏') && key.contains('编辑')) {
                         key = 'jianshang'
-                    } else if (key.contains(word) && key.contains('赏析') && key.contains('编辑')) {
+                    } else if (key.contains('赏析') && key.contains('编辑')) {
                         key = 'shangxi'
-                    } else if (key.contains(word) && key.contains('注释') && key.contains('编辑')) {
+                    } else if (key.contains('注释') && key.contains('编辑')) {
                         key = 'zhushi'
-                    } else if (key.contains(word) && key.contains('译文') && key.contains('编辑')) {
+                    }else if (key.contains('注解') && key.contains('编辑')) {
+                        key = 'zhujie'
+                    } else if ( key.contains('译文') && key.contains('编辑')) {
                         key = 'yiwen'
-                    } else if (key.contains(word) && key.contains('背景') && key.contains('编辑')) {
+                    } else if ( key.contains('背景') && key.contains('编辑')) {
                         key = 'beijing'
                     } else if (key.contains('出处') ) {
                         key = 'chuchu'
@@ -159,11 +182,13 @@ class BaiduBaike2Loader {
                 name = 'bieming'
             }
 
-            println "" + name + ":" + value
+            //println "" + name + ":" + value
             divMap[name] = value
         }
 
         divMap['link'] = url
+        divMap['sum'] = summary
+        divMap['pid'] = pid
 
         println '=============================='
 //        divMap.each { key,value ->
@@ -171,15 +196,36 @@ class BaiduBaike2Loader {
 //        }
 
         divMap.each { entry ->
-            println entry.key.toString() + "==>" + entry.value.toString()
+            //println entry.key.toString() + "==>" + entry.value.toString()
         }
         //println divMap.toString()
 
         def author = divMap['zuozhe']
-        if(author==null || author.equals("null")){
-            author = zuozhe
-        }
         def title = divMap['title']
+        if(author==null || author.equals("null") || title==null || title.equals('null')){
+            println "[" + word + ']   failed!'
+            notExistWords << word
+            return false;
+        }
+
+
+        if (title == '《' + word + "》") {
+            title = word
+        }
+
+        if (title != word && !(title.toString().contains(word))) {
+            println '[' +pid+', '+ word + ']   失败了!!'
+            notExistWords << word
+            return false;
+        }
+
+        if (author != zuozhe && author != '无名氏') {
+            println '[' +pid+', '+ word + '] 作者不匹配  失败了!!'
+            notExistWords << word
+            return false;
+        }
+
+
 
         def builder = new JsonBuilder()
         // 构建json格式的poem
@@ -188,9 +234,9 @@ class BaiduBaike2Loader {
         }
 
         def finalData = JsonOutput.prettyPrint(builder.toString())
-        println finalData
+        //println finalData
 
-        def fname = author + "_" + title + ".json"
+        def fname = pid+'_'+author + "_" + title + ".json"
         fname = formatString(fname)
         fname = fname.replace("<", "")
         fname = fname.replace(">", "")
@@ -198,6 +244,8 @@ class BaiduBaike2Loader {
         fname = fname.replace(":", "")
         fname = fname.replace("=", "")
         saveToFile(rootDir, "baike", fname, finalData)
+
+        return true;
     }
 
     static void main(args) {
