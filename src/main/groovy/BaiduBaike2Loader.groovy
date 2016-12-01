@@ -5,6 +5,7 @@ import groovy.json.JsonOutput
 import groovy.sql.Sql
 import groovy.util.slurpersupport.NodeChild
 import org.cyberneko.html.parsers.SAXParser
+import util.ParseUtils
 
 import static Utils.errorText
 import static Utils.formatString
@@ -178,42 +179,7 @@ class BaiduBaike2Loader {
                     // println '!!!!!!!!!!!!!!!div:'+div.toString() +',$$$$$'+lastDivTag
                     //println 'key:'+lastDivTag+', content:'+content +'*****'
 
-
-                    if (key.contains(word) && key.contains('原文') && key.contains('编辑')) {
-                        key = 'yuanwen'
-                    } else if (key.contains('作者') && key.contains('编辑')) {
-                        key = 'zzjj'
-                    } else if (key.contains('鉴赏') && key.contains('编辑')) {
-                        key = 'shangxi1'
-                    } else if (key.contains('赏析') && key.contains('编辑')) {
-                        key = 'shangxi2'
-                    } else if (key.contains('注释') && key.contains('编辑')) {
-                        key = 'zhushi'
-                    } else if (key.contains('注解') && key.contains('编辑')) {
-                        key = 'zhujie'
-                    } else if (key.contains('译文') && key.contains('编辑')) {
-                        key = 'yiwen'
-                    } else if (key.contains('背景') && key.contains('编辑')) {
-                        key = 'beijing'
-                    } else if (key.contains('出处')) {
-                        key = 'chuchu'
-                    } else if (key.contains('别名')) {
-                        key = 'bieming'
-                    } else if (key.contains('影响')) {
-                        key = 'yingxiang'
-                    } else if (key.contains('简析')) {
-                        key = 'shangxi3'
-                    }  else if (key.contains('简介')) {
-                        key = 'shangxi4'
-                    } else if (key.contains('正文')) {
-                        key = 'zhengwen'
-                    } else if (key.contains('诗歌简介')) {
-                        key = 'shangxi4'
-                    } else if (key.contains('作品评析')) {
-                        key = 'shangxi5'
-                    } else if (key.contains('释义')) {
-                        key = 'shiyi'
-                    }
+                    key = ParseUtils.getTag(key)
 
                     def oldValue = divMap[key]
                     if (oldValue == null) {
@@ -246,19 +212,8 @@ class BaiduBaike2Loader {
 
             name = name.toString().replace("\n", "").replace(" ", "").trim()
             value = value.toString().replace("\n", "").replace(" ", "").trim()
-            if (name.contains('作品名称') || name.contains('中文名')) {
-                name = 'title'
-            } else if (name.contains('作者')) {
-                name = 'zuozhe'
-            } else if (name.contains('年代')) {
-                name = 'niandai'
-            } else if (name.contains('体裁')) {
-                name = 'ticai'
-            } else if (name.contains('出处')) {
-                name = 'chuchu'
-            } else if (name.contains('别名')) {
-                name = 'bieming'
-            }
+
+            name = ParseUtils.getTag(name)
 
             //println "" + name + ":" + value
             divMap[name] = value
