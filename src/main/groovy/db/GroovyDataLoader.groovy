@@ -1,42 +1,21 @@
+package db
 /**
  * Created by SHAOPENGXIANG on 2016/11/3.
  */
 //@Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7' )
 import com.mongodb.*
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.ListCollectionsIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import org.bson.Document;
-
-import groovyx.net.http.HTTPBuilder
+import org.bson.Document
 
 //import groovyx.net.http.ContentType // this doesn't import ContentType
 //import groovyx.net.http.Method // this doesn't import Method
-import groovyx.net.http.RESTClient
-import groovyx.net.http.HttpResponseDecorator
-
 import java.nio.file.Files
 import java.nio.file.Paths
 
 // ContentType static import
-import static groovyx.net.http.ContentType.*
-
 // Method static import
-import static groovyx.net.http.Method.*
-
-import java.util.ArrayList;
-import java.util.List;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
-import com.mongodb.MongoException;
-import com.mongodb.util.JSON;
+import com.mongodb.BasicDBObject
 
 @Singleton
 class GroovyDataLoader {
@@ -46,8 +25,8 @@ class GroovyDataLoader {
         init()
     }
 
-    //def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
-    def dbLocation = 'D:\\data\\kkpoem\\dict\\'
+    def dbLocation = 'C:\\Dev\\gushiwen\\dbs\\'
+    //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
     def dir = new File(dbLocation)
 
     def getOnlineDb() {

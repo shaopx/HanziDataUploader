@@ -5,14 +5,10 @@
 
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
-import com.mongodb.client.MongoDatabase
+import db.GroovyDataLoader
 import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
 import groovy.sql.Sql
 import org.bson.Document
-
-import java.sql.Connection;
-
 
 class MongoDbReader {
 

@@ -1,17 +1,13 @@
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoDatabase
-import groovyx.net.http.ContentType
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.Method
+import db.GroovyDataLoader
 import org.bson.Document
-import groovyx.net.http.HTTPBuilder
+
 import static groovyx.net.http.ContentType.URLENC
 import groovyx.net.http.HTTPBuilder
-import static groovyx.net.http.Method.GET
+
 import static groovyx.net.http.Method.POST
-import static groovyx.net.http.ContentType.TEXT
-import groovyx.net.http.HttpURLClient
 import static groovyx.net.http.ContentType.JSON
 
 /**

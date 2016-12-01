@@ -1,10 +1,8 @@
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import com.mongodb.util.JSON
+import db.GroovyDataLoader
 import org.bson.Document
-
-import java.nio.file.Files
-import java.nio.file.Paths
 
 /**
  * Created by SHAOPENGXIANG on 2016/11/22.

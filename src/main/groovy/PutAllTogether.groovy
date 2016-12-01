@@ -1,16 +1,12 @@
-import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoCursor
-import com.mongodb.util.JSON
+import db.GroovyDataLoader
 import groovy.sql.Sql
 import org.bson.Document
-import org.bson.*
 
 import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
-import java.nio.file.Files
-import java.nio.file.Paths
 
 /**
  * Created by shaopengxiang on 2016/11/18.
