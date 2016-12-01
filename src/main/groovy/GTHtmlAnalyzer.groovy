@@ -4,18 +4,9 @@ import groovy.util.slurpersupport.NodeChild
 import groovyx.net.http.HTTPBuilder
 import org.cyberneko.html.parsers.SAXParser
 
-import java.util.concurrent.Future
-
 import static groovyx.net.http.Method.GET
 import static groovyx.net.http.ContentType.TEXT
-import static Utils.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.Future
-
+import static util.Utils.*
 
 /**
  * Created by shaopengxiang on 2016/11/14.

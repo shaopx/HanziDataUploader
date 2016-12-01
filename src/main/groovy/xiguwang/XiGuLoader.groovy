@@ -1,20 +1,17 @@
+package xiguwang
+
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder
 import org.cyberneko.html.parsers.SAXParser
 
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-import static Utils.errorText
-import static Utils.formatException
-import static Utils.errorText
-import static Utils.formatString
-import static Utils.saveToFile
-import static Utils.*
-import static groovyx.net.http.ContentType.TEXT
-import static groovyx.net.http.Method.GET
-
+import static util.Utils.formatException
+import static util.Utils.errorText
+import static util.Utils.formatString
+import static util.Utils.saveToFile
+import static util.Utils.*
 
 /**
  * Created by SHAOPENGXIANG on 2016/11/26.

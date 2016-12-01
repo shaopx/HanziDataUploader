@@ -1,3 +1,5 @@
+package baike
+
 import com.mongodb.BasicDBObject
 import db.GroovyDataLoader
 import groovy.json.JsonBuilder
@@ -32,7 +34,7 @@ class BaiduBaike2Loader {
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >0 and _id<4s000 "
+        def sql_id_list = "select * from poem where _id >0 and _id<4000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -64,12 +66,12 @@ class BaiduBaike2Loader {
         notExistWords.each {
             wordstr += (it.toString() + '\r\n')
         }
-        errorText(rootDir, 'error', wordstr)
+        Utils.errorText(rootDir, 'error', wordstr)
     }
 
     boolean requestWord(pid, zuozhe, word) {
         def url = "http://baike.baidu.com/item/" + word
-        def text = getUrlTextContent(rootDir, url);
+        def text = Utils.getUrlTextContent(rootDir, url);
         println 'requestWord:' + word
         if (!text || text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
             println '[' + pid + ', ' + word + ']   不存在!'
@@ -294,7 +296,7 @@ class BaiduBaike2Loader {
         }
 
 
-        if (title != word && ld(title, word)>2) {
+        if (title != word && Utils.ld(title, word)>2) {
             println '[' + pid + ', ' + word + ']   失败了!!  author:' +author +', title:'+title
             notExistWords << pid + '<<' + word
             return false;
@@ -322,13 +324,13 @@ class BaiduBaike2Loader {
         //println finalData
 
         def fname = pid + '_' + author + "_" + title + ".json"
-        fname = formatString(fname)
+        fname = Utils.formatString(fname)
         fname = fname.replace("<", "")
         fname = fname.replace(">", "")
         fname = fname.replace("\"", "")
         fname = fname.replace(":", "")
         fname = fname.replace("=", "")
-        saveToFile(rootDir, pid, fname, finalData)
+        Utils.saveToFile(rootDir, pid, fname, finalData)
 
         return true;
     }

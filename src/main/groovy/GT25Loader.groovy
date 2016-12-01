@@ -2,12 +2,12 @@ import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder
 
-import static Utils.formatString
+import static util.Utils.formatString
 import static groovyx.net.http.ContentType.TEXT
 import static groovyx.net.http.Method.GET
 import org.cyberneko.html.parsers.SAXParser
-import groovy.util.XmlSlurper
-import static Utils.*
+
+import static util.Utils.*
 
 /**
  * Created by Administrator on 2016/11/15.
