@@ -1,3 +1,5 @@
+package guotu
+
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovyx.net.http.HTTPBuilder

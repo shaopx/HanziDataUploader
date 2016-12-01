@@ -145,6 +145,14 @@ class Utils {
     }
 
     public static int ld(String str1, String str2) {
+        if(str1==null){
+            str1="";
+        }
+
+        if(str2==null){
+            str2="";
+        }
+
         int[][] d;    //矩阵
         int n = str1.length();
         int m = str2.length();

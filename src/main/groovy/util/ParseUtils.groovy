@@ -14,7 +14,9 @@ class ParseUtils {
             return 'zzjj'
         } else if (raw.contains('原文') || raw.contains('正文')) {
             return 'yuanwen'
-        } else if (raw.contains('注释') || raw.contains('注解')) {
+        } else if (raw.contains('注释')) {
+            return 'zhushi'
+        } else if (raw.contains('注解')) {
             return 'zhujie'
         } else if (raw.contains('繁体') || raw.contains('对照')) {
             return 'fanti'
@@ -46,8 +48,6 @@ class ParseUtils {
             return 'zuozhe'
         } else if (raw.contains('年代')) {
             return 'niandai'
-        } else if (raw.contains('体裁')) {
-            return 'ticai'
         } else if (raw.contains('体裁')) {
             return 'ticai'
         } else {

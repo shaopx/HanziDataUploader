@@ -1,3 +1,5 @@
+package guotu
+
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.util.slurpersupport.NodeChild

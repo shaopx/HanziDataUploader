@@ -1,19 +1,16 @@
 package baike
 
 import com.mongodb.BasicDBObject
+import com.mongodb.client.MongoCollection
 import db.GroovyDataLoader
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.sql.Sql
 import groovy.util.slurpersupport.NodeChild
+import org.bson.Document
 import org.cyberneko.html.parsers.SAXParser
 import util.ParseUtils
-
-import static Utils.errorText
-import static Utils.formatString
-import static Utils.getUrlTextContent
-import static Utils.*
-import static Utils.saveToFile
+import util.Utils
 
 /**
  * Created by SHAOPENGXIANG on 2016/11/30.
@@ -24,6 +21,7 @@ class BaiduBaike2Loader {
     def notExistWords = []
 
     def dbLoader = GroovyDataLoader.instance
+    MongoCollection<Document> baikeCl = null
 
     def blockDivClasses = ['promotion_title', 'side-content', 'lemmaWgt-promotion-vbaike', 'promotion_viewport',
                            'clear', 'side-box lemma-statistics', 'description', 'credit-title',
@@ -32,9 +30,12 @@ class BaiduBaike2Loader {
     void perform() {
         dbLoader.copyDbs()
 
+        def mongoDb = dbLoader.getOnlineDb()
+        baikeCl = mongoDb.getCollection("baike");
+
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >0 and _id<4000 "
+        def sql_id_list = "select * from poem where _id >0 and _id<1000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -217,7 +218,7 @@ class BaiduBaike2Loader {
 
             name = ParseUtils.getTag(name)
 
-            //println "" + name + ":" + value
+            println "" + name + ":" + value
             divMap[name] = value
         }
 
@@ -276,13 +277,17 @@ class BaiduBaike2Loader {
         }
         //println divMap.toString()
 
+        if (zuozhe == '无名氏' || zuozhe == '佚名') {
+            divMap['zuozhe'] = zuozhe
+        }
+
         def author = divMap['zuozhe']
         def title = divMap['title']
-        if (author == null || author.equals("null") || title == null || title.equals('null')) {
-            println "[" + word + ']   failed!  author:' +author +', title:'+title
-            notExistWords << pid + '<<' + word
-            return false;
-        }
+//        if (author == null || author.equals("null") || title == null || title.equals('null')) {
+//            println "[" + word + ']   failed!  author:' + author + ', title:' + title
+//            notExistWords << pid + '<<' + word
+//            return false;
+//        }
 
 
         if (title == '《' + word + "》") {
@@ -296,14 +301,14 @@ class BaiduBaike2Loader {
         }
 
 
-        if (title != word && Utils.ld(title, word)>2) {
-            println '[' + pid + ', ' + word + ']   失败了!!  author:' +author +', title:'+title
+        if (title != word && !(title.toString().contains(word)) && Utils.ld(title, word) > 2) {
+            println '[' + pid + ', ' + word + ']   失败了!!  author:' + author + ', title:' + title
             notExistWords << pid + '<<' + word
             return false;
         }
 
         if (author != zuozhe && author != '无名氏') {
-            println '[' + pid + ', ' + word + '] 作者不匹配  失败了!!  author:' +author +', title:'+title
+            println '[' + pid + ', ' + word + '] 作者不匹配  失败了!!  author:' + author + ', title:' + title
             notExistWords << pid + '<<' + word
             return false;
         }
@@ -314,23 +319,38 @@ class BaiduBaike2Loader {
             divMap['zzjj'] = zzjj
         }
 
-        def builder = new JsonBuilder()
-        // 构建json格式的poem
-        builder {
-            poem divMap
+//        def builder = new JsonBuilder()
+//        // 构建json格式的poem
+//        builder {
+//            poem divMap
+//        }
+//
+//        def finalData = JsonOutput.prettyPrint(builder.toString())
+//        //println finalData
+//
+//        def fname = pid + '_' + author + "_" + title + ".json"
+//        fname = Utils.formatString(fname)
+//        fname = fname.replace("<", "")
+//        fname = fname.replace(">", "")
+//        fname = fname.replace("\"", "")
+//        fname = fname.replace(":", "")
+//        fname = fname.replace("=", "")
+//        Utils.saveToFile(rootDir, pid, fname, finalData)
+
+        // 插入数据库
+        Document document = new Document();
+        document.append("pid", pid.toString());
+        document.append("n", title.toString());
+        document.append("a", author.toString());
+
+
+        divMap.each {
+            //println 'key:' + it.key + ', value:' + it.value
+            def tag = ParseUtils.getTag(it.key)
+            document.append(tag, it.value.toString());
         }
 
-        def finalData = JsonOutput.prettyPrint(builder.toString())
-        //println finalData
-
-        def fname = pid + '_' + author + "_" + title + ".json"
-        fname = Utils.formatString(fname)
-        fname = fname.replace("<", "")
-        fname = fname.replace(">", "")
-        fname = fname.replace("\"", "")
-        fname = fname.replace(":", "")
-        fname = fname.replace("=", "")
-        Utils.saveToFile(rootDir, pid, fname, finalData)
+        baikeCl.insertOne(document);
 
         return true;
     }
