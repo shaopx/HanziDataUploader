@@ -283,11 +283,11 @@ class BaiduBaike2Loader {
 
         def author = divMap['zuozhe']
         def title = divMap['title']
-//        if (author == null || author.equals("null") || title == null || title.equals('null')) {
-//            println "[" + word + ']   failed!  author:' + author + ', title:' + title
-//            notExistWords << pid + '<<' + word
-//            return false;
-//        }
+        if (title == null || title.equals('null')) {
+            println "[" + word + ']   failed!  author:' + author + ', title:' + title
+            notExistWords << pid + '<<' + word
+            return false;
+        }
 
 
         if (title == '《' + word + "》") {
