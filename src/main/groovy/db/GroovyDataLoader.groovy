@@ -29,13 +29,24 @@ class GroovyDataLoader {
     //def dbLocation = 'D:\\data\\kkpoem\\dict\\'
     def dir = new File(dbLocation)
 
-    def getOnlineDb() {
+    MongoDatabase getOnlineDb() {
 
         MongoClient mongoClient = getMongoClient();
 
         MongoDatabase db = mongoClient.getDatabase(dbName);
 
         return db;
+    }
+
+    /**
+     * 返回mongo db的collection对象
+     * @param clName
+     * @return
+     */
+    def getOnlineCl(clName){
+        def db = getOnlineDb()
+        def dbCl = db.getCollection(clName);
+        return dbCl
     }
 
     void copyDbs() {
@@ -120,7 +131,7 @@ class GroovyDataLoader {
 
     void buildJson() {
 
-        MongoDatabase db = connectToDb();
+        MongoDatabase db = getOnlineDb();
         MongoCollection<Document> collections = db.getCollection("testcollections");
 
 

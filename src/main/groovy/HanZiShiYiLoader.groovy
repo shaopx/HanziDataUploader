@@ -18,7 +18,7 @@ class HanZiShiYiLoader extends GroovyDataLoader {
 
     public void loadShiYi() {
         //http://dict-mobile.iciba.com/interface/index.php?c=word&list=100,24,8,21,22,10,9,15,2,5,14,4,6,7&client=1&timestamp=1478683173&sign=948cfe904719a74b&uuid=7932d1177242405a913685ef25023fb3&sv=android6.0&v=8.4.6&uid=word=%25E5%258E%25BB
-        MongoDatabase db = connectToDb();
+        MongoDatabase db = getOnlineDb();
         MongoCollection<Document> collections = db.getCollection("shiyi");
 
         def set = wordMap.keySet();

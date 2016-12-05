@@ -1,3 +1,5 @@
+package crawler
+
 import edu.uci.ics.crawler4j.crawler.WebCrawler
 
 import java.util.regex.Pattern

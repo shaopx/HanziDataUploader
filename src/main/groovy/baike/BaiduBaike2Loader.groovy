@@ -9,6 +9,7 @@ import groovy.sql.Sql
 import groovy.util.slurpersupport.NodeChild
 import org.bson.Document
 import org.cyberneko.html.parsers.SAXParser
+import util.ErrorHandler
 import util.ParseUtils
 import util.Utils
 
@@ -17,11 +18,15 @@ import util.Utils
  */
 class BaiduBaike2Loader {
     def rootDir = "c:/dev/data/poem/baidu/";
+    def category = 'baike'
 
     def notExistWords = []
 
     def dbLoader = GroovyDataLoader.instance
     MongoCollection<Document> baikeCl = null
+
+    @Delegate
+    def ErrorHandler errorHandler = new ErrorHandler()
 
     def blockDivClasses = ['promotion_title', 'side-content', 'lemmaWgt-promotion-vbaike', 'promotion_viewport',
                            'clear', 'side-box lemma-statistics', 'description', 'credit-title',
@@ -34,27 +39,53 @@ class BaiduBaike2Loader {
         baikeCl = mongoDb.getCollection("baike");
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
-        BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >0 and _id<1000 "
+
+        def sql_id_list = "select * from poem where _id >0 and _id<500 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
             def pauthor = row["zuozhe"]
             def pid = row["_id"]
+            def datamap = [:]
+            datamap['pid'] = pid
+            datamap['zuozhe'] = pauthor
+            datamap['mingcheng'] = pname
+
+
             println 'pid:' + pid + ', zuozhe:' + pauthor + ', pname:' + pname
 
-            boolean succeed = requestWord(pid, pauthor, pname)
+            boolean succeed = requestWord(pid, pauthor, pname, datamap)
             if (!succeed) {
                 def newName = pname.toString().replace('。', '·')
-                succeed = requestWord(pid, pauthor, newName)
+                if (newName != pname) {
+                    succeed = requestWord(pid, pauthor, newName, datamap)
+                }
+
+                if (succeed) {
+                    return
+                }
                 def names = newName.split('·')
+
                 names.each { name ->
-                    succeed = requestWord(pid, pauthor, name)
+                    if (name != pname) {
+                        succeed = succeed || requestWord(pid, pauthor, name, datamap)
+                        if (succeed) {
+                            return
+                        }
+                    }
+
                 }
                 names = newName.split('/')
                 names.each { name ->
-                    succeed = requestWord(pid, pauthor, name)
+                    if (name != pname) {
+                        succeed = succeed || requestWord(pid, pauthor, name, datamap)
+                    }
+
                 }
+
+//                if (!succeed) {
+//                    saveError(category, '百度百科查询此条目失败', datamap)
+//                }
             }
         }
         //requestWord('五弦弹－恶郑之夺雅也')
@@ -70,13 +101,15 @@ class BaiduBaike2Loader {
         Utils.errorText(rootDir, 'error', wordstr)
     }
 
-    boolean requestWord(pid, zuozhe, word) {
+    boolean requestWord(pid, zuozhe, word, datamap) {
         def url = "http://baike.baidu.com/item/" + word
         def text = Utils.getUrlTextContent(rootDir, url);
         println 'requestWord:' + word
         if (!text || text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
             println '[' + pid + ', ' + word + ']   不存在!'
             notExistWords << pid + '<<' + word
+            datamap['word'] = word
+            saveError(category, '百科没有本词条', 1, datamap)
             return false;
         }
 
@@ -286,6 +319,7 @@ class BaiduBaike2Loader {
         if (title == null || title.equals('null')) {
             println "[" + word + ']   failed!  author:' + author + ', title:' + title
             notExistWords << pid + '<<' + word
+            saveError(category, '百科名称不能解析', 2, datamap)
             return false;
         }
 
@@ -304,12 +338,18 @@ class BaiduBaike2Loader {
         if (title != word && !(title.toString().contains(word)) && Utils.ld(title, word) > 2) {
             println '[' + pid + ', ' + word + ']   失败了!!  author:' + author + ', title:' + title
             notExistWords << pid + '<<' + word
+            datamap['word'] = word
+            datamap['title'] = title
+            saveError(category, '名称相差太大', 3,  datamap)
             return false;
         }
 
         if (author != zuozhe && author != '无名氏') {
             println '[' + pid + ', ' + word + '] 作者不匹配  失败了!!  author:' + author + ', title:' + title
             notExistWords << pid + '<<' + word
+            datamap['baike_author'] = author
+            datamap['title'] = title
+            saveError(category, '作者不一致', 4, datamap)
             return false;
         }
 

@@ -1,3 +1,6 @@
+package crawler
+
+import crawler.GroovyTextCrawler
 import edu.uci.ics.crawler4j.crawler.Page
 import edu.uci.ics.crawler4j.parser.HtmlParseData
 import edu.uci.ics.crawler4j.url.WebURL
@@ -22,9 +25,9 @@ class GuShiWenGrawler extends GroovyTextCrawler {
 
     @Override
     boolean shouldVisit(Page referringPage, WebURL url) {
-        //System.out.println('GuShiWenGrawler should visit :' + url)
+        //System.out.println('crawler.GuShiWenGrawler should visit :' + url)
         String href = url.getURL().toLowerCase();
-        return !(href =~ FILTERS) && href =~ domainPattern;
+        return !(href =~ GroovyTextCrawler.FILTERS) && href =~ domainPattern;
 //        println "flag:"+flag
     }
 
@@ -32,7 +35,7 @@ class GuShiWenGrawler extends GroovyTextCrawler {
     void visit(Page page) {
         try {
             def url = page.getWebURL();
-            println 'GuShiWenGrawler visit :' + url
+            println 'crawler.GuShiWenGrawler visit :' + url
             if (page.getParseData() instanceof HtmlParseData) {
 
                 HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
@@ -69,8 +72,8 @@ class GuShiWenGrawler extends GroovyTextCrawler {
 
 
     def readLines(url, text, callback) {
-        Article article = new Article();
-        article.url = url;
+//        Article article = new Article();
+//        article.url = url;
         println 'read lines :' + text.getClass().getName()
 
 

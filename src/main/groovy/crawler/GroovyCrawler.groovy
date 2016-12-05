@@ -1,5 +1,7 @@
+package crawler
+
+import crawler.GroovyTextCrawler
 import edu.uci.ics.crawler4j.crawler.Page
-import edu.uci.ics.crawler4j.crawler.WebCrawler
 import edu.uci.ics.crawler4j.url.WebURL
 
 /**
@@ -11,14 +13,14 @@ class GroovyCrawler extends GroovyTextCrawler{
 
     @Override
     boolean shouldVisit(Page referringPage, WebURL url) {
-        println 'GroovyCrawler should visit :'+url
+        println 'crawler.GroovyCrawler should visit :'+url
         String href = url.getURL().toLowerCase();
-        return !FILTERS.matcher(href).matches() && href.contains(crawlDomains);
+        return !GroovyTextCrawler.FILTERS.matcher(href).matches() && href.contains(crawlDomains);
     }
 
     @Override
     void visit(Page page) {
-        println 'GroovyCrawler visit :'+page.getWebURL()
+        println 'crawler.GroovyCrawler visit :'+page.getWebURL()
         super.visit(page)
     }
 }
