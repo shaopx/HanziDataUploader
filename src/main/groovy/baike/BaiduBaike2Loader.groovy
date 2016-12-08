@@ -39,7 +39,7 @@ class BaiduBaike2Loader {
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
 
-        def sql_id_list = "select * from poem where _id >5000 and _id<=10000 "
+        def sql_id_list = "select * from poem where _id >=17318 and _id<=50000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -50,7 +50,7 @@ class BaiduBaike2Loader {
             datamap['zuozhe'] = pauthor
             datamap['mingcheng'] = pname
             datamap['date'] = date
-
+            datamap['category'] = category
 
             println 'pid:' + pid + ', zuozhe:' + pauthor + ', pname:' + pname
             boolean succeed = requestWord(pid, pauthor, pname, datamap)
@@ -146,12 +146,12 @@ class BaiduBaike2Loader {
 
         def errormap = [:]
 
-        datamap['url'] = url
+//        datamap['url'] = url
 
 //        errormap.putAll(datamap)
         errormap['url'] = url
         errormap['word'] = word
-        errormap['pid'] = pid
+//        errormap['pid'] = pid
 
         def errors = datamap['errors']
         if (errors == null) {
