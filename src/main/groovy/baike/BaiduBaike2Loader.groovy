@@ -1,10 +1,7 @@
 package baike
 
-import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import db.GroovyDataLoader
-import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
 import groovy.sql.Sql
 import groovy.util.slurpersupport.NodeChild
 import org.bson.Document
@@ -35,12 +32,14 @@ class BaiduBaike2Loader {
     void perform() {
         dbLoader.copyDbs()
 
+        def date = Utils.getCurrentDate()
+
         def mongoDb = dbLoader.getOnlineDb()
         baikeCl = mongoDb.getCollection("baike");
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
 
-        def sql_id_list = "select * from poem where _id >0 and _id<500 "
+        def sql_id_list = "select * from poem where _id >5000 and _id<=10000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
@@ -50,45 +49,19 @@ class BaiduBaike2Loader {
             datamap['pid'] = pid
             datamap['zuozhe'] = pauthor
             datamap['mingcheng'] = pname
+            datamap['date'] = date
 
 
             println 'pid:' + pid + ', zuozhe:' + pauthor + ', pname:' + pname
-
             boolean succeed = requestWord(pid, pauthor, pname, datamap)
+
             if (!succeed) {
-                def newName = pname.toString().replace('。', '·')
-                if (newName != pname) {
-                    succeed = requestWord(pid, pauthor, newName, datamap)
-                }
-
-                if (succeed) {
-                    return
-                }
-                def names = newName.split('·')
-
-                names.each { name ->
-                    if (name != pname) {
-                        succeed = succeed || requestWord(pid, pauthor, name, datamap)
-                        if (succeed) {
-                            return
-                        }
-                    }
-
-                }
-                names = newName.split('/')
-                names.each { name ->
-                    if (name != pname) {
-                        succeed = succeed || requestWord(pid, pauthor, name, datamap)
-                    }
-
-                }
-
-//                if (!succeed) {
-//                    saveError(category, '百度百科查询此条目失败', datamap)
-//                }
+                saveError(datamap)
+            } else {
+                saveWord(datamap)
             }
         }
-        //requestWord('五弦弹－恶郑之夺雅也')
+        //doRequestWord('五弦弹－恶郑之夺雅也')
 
         writeErrors()
     }
@@ -101,15 +74,96 @@ class BaiduBaike2Loader {
         Utils.errorText(rootDir, 'error', wordstr)
     }
 
-    boolean requestWord(pid, zuozhe, word, datamap) {
+    boolean requestWord(pid, pauthor, pname, datamap) {
+        boolean succeed = doRequestWord(pid, pauthor, pname, datamap)
+        if (!succeed) {
+            def newName = pname.toString().replace('。', '·')
+            if (newName != pname) {
+                succeed = doRequestWord(pid, pauthor, newName, datamap)
+            }
+
+            if (succeed) {
+                return true
+            }
+            def names = newName.split('·')
+
+            names.each { name ->
+                if (name != pname) {
+                    succeed = succeed || doRequestWord(pid, pauthor, name, datamap)
+                    if (succeed) {
+                        return true
+                    }
+                }
+
+            }
+
+            if (succeed) {
+                return true
+            }
+
+
+            names = newName.split('/')
+            names.each { name ->
+                if (name != pname) {
+                    succeed = succeed || doRequestWord(pid, pauthor, name, datamap)
+                }
+
+            }
+
+
+        }
+
+        if (!succeed) {
+//                saveError(datamap)
+            return false
+        } else {
+            return true;
+        }
+
+    }
+
+    void saveWord(datamap) {
+        Document document = new Document();
+
+        datamap.each() {
+            document.append(it.key, it.value.toString());
+        }
+        baikeCl.insertOne(document);
+    }
+
+    def onError(category, desc, code, datamap) {
+        println 'erorr[' + desc + ']'
+        def pid = datamap['pid']
+        def word = datamap['word']
+        notExistWords << pid + '<<' + word
+        datamap.put("category", category.toString());
+        datamap.put("desc", desc.toString());
+        datamap.put("code", code.toString());
+    }
+
+    boolean doRequestWord(pid, zuozhe, word, datamap) {
         def url = "http://baike.baidu.com/item/" + word
+
+        def errormap = [:]
+
+        datamap['url'] = url
+
+//        errormap.putAll(datamap)
+        errormap['url'] = url
+        errormap['word'] = word
+        errormap['pid'] = pid
+
+        def errors = datamap['errors']
+        if (errors == null) {
+            errors = []
+            datamap['errors'] = errors
+        }
+        datamap['errors'] << errormap
+
         def text = Utils.getUrlTextContent(rootDir, url);
-        println 'requestWord:' + word
+        println 'doRequestWord:' + word
         if (!text || text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
-            println '[' + pid + ', ' + word + ']   不存在!'
-            notExistWords << pid + '<<' + word
-            datamap['word'] = word
-            saveError(category, '百科没有本词条', 1, datamap)
+            onError(category, '百科没有本词条', 1, errormap)
             return false;
         }
 
@@ -148,7 +202,7 @@ class BaiduBaike2Loader {
         def tags = page."**".findAll {
             it.name() == 'DIV' && it.@class == 'para-title level-2'
         }
-        println 'tags:' + tags.toString()
+        //println 'tags:' + tags.toString()
 
         def engdTags = page."**".findAll {
             it.name() == 'DL' && it.@class == 'lemma-reference collapse nslog-area log-set-param'
@@ -168,6 +222,7 @@ class BaiduBaike2Loader {
         }
 
         def divMap = [:]
+
         def divChilds = []
         def lastDivTag = null
         divs.each { div ->
@@ -205,10 +260,7 @@ class BaiduBaike2Loader {
                             sb.append(line).append("\n")
                         }
                     }
-//                    divChilds.each { line ->
-//
-//
-//                    }
+
                     String content = sb.toString()
                     content = content.replace('\n\n', '\n')
                     //println divChilds.size() + ":    key:" + lastDivTag + "--->" + content
@@ -251,7 +303,7 @@ class BaiduBaike2Loader {
 
             name = ParseUtils.getTag(name)
 
-            println "" + name + ":" + value
+            //println "" + name + ":" + value
             divMap[name] = value
         }
 
@@ -300,15 +352,8 @@ class BaiduBaike2Loader {
             divMap['yuanwen'] = yuanwen
         }
 
-        println '=============================='
-//        divMap.each { key,value ->
-//            println key+">>>"+value.toString()
-//        }
+        //println '=============================='
 
-        divMap.each { entry ->
-            //println entry.key.toString() + "==>" + entry.value.toString()
-        }
-        //println divMap.toString()
 
         if (zuozhe == '无名氏' || zuozhe == '佚名') {
             divMap['zuozhe'] = zuozhe
@@ -317,9 +362,7 @@ class BaiduBaike2Loader {
         def author = divMap['zuozhe']
         def title = divMap['title']
         if (title == null || title.equals('null')) {
-            println "[" + word + ']   failed!  author:' + author + ', title:' + title
-            notExistWords << pid + '<<' + word
-            saveError(category, '百科名称不能解析', 2, datamap)
+            onError(category, '百科名称不能解析', 2, errormap)
             return false;
         }
 
@@ -336,20 +379,16 @@ class BaiduBaike2Loader {
 
 
         if (title != word && !(title.toString().contains(word)) && Utils.ld(title, word) > 2) {
-            println '[' + pid + ', ' + word + ']   失败了!!  author:' + author + ', title:' + title
-            notExistWords << pid + '<<' + word
-            datamap['word'] = word
             datamap['title'] = title
-            saveError(category, '名称相差太大', 3,  datamap)
+            onError(category, '名称相差太大', 3, errormap)
             return false;
         }
 
         if (author != zuozhe && author != '无名氏') {
-            println '[' + pid + ', ' + word + '] 作者不匹配  失败了!!  author:' + author + ', title:' + title
-            notExistWords << pid + '<<' + word
             datamap['baike_author'] = author
             datamap['title'] = title
-            saveError(category, '作者不一致', 4, datamap)
+
+            onError(category, '作者不一致', 4, errormap)
             return false;
         }
 
@@ -377,21 +416,8 @@ class BaiduBaike2Loader {
 //        fname = fname.replace("=", "")
 //        Utils.saveToFile(rootDir, pid, fname, finalData)
 
-        // 插入数据库
-        Document document = new Document();
-        document.append("pid", pid.toString());
-        document.append("n", title.toString());
-        document.append("a", author.toString());
-
-
-        divMap.each {
-            //println 'key:' + it.key + ', value:' + it.value
-            def tag = ParseUtils.getTag(it.key)
-            document.append(tag, it.value.toString());
-        }
-
-        baikeCl.insertOne(document);
-
+        errormap.clear()
+        datamap.putAll(divMap)
         return true;
     }
 

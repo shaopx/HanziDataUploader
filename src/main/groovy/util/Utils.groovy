@@ -2,10 +2,37 @@ package util
 
 import groovy.util.slurpersupport.NodeChild
 
+import java.text.SimpleDateFormat
+
 /**
  * Created by shaopengxiang on 2016/11/15.
  */
 class Utils {
+
+    static String getCurrentDate() {
+        return getCurrentDate("yyyy-MM-dd");
+    }
+
+    // 获得当前时间
+    static String getCurrentDate(String formatter) {
+        Date d = new Date();
+        return getStrDateFromTime(d.getTime(), formatter);
+    }
+
+
+    static String getStrDateFromTime(long time) {
+        return getStrDateFromTime(time, "yyyy-MM-dd HH:mm:ss");
+    }
+
+
+    static String getStrDateFromTime(long time, String formatter) {
+        SimpleDateFormat from = new SimpleDateFormat(formatter);
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(time);
+        String result = from.format(new Date(cal.getTimeInMillis()));
+        return result;
+    }
+
 
     static String getFileSubDir(rootdir, uid) {
         if (uid instanceof Integer) {

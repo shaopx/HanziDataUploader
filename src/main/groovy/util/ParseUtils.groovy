@@ -50,6 +50,10 @@ class ParseUtils {
             return 'niandai'
         } else if (raw.contains('体裁')) {
             return 'ticai'
+        } else if (raw.contains('特点')) {
+            return 'tedian'
+        } else if (raw.contains('外文')) {
+            return 'waiwen'
         } else {
             return raw
         }
