@@ -1,5 +1,6 @@
 package baike
 
+import com.mongodb.BasicDBObject
 import com.mongodb.client.MongoCollection
 import db.GroovyDataLoader
 import groovy.sql.Sql
@@ -32,27 +33,38 @@ class BaiduBaike2Loader {
     void perform() {
         dbLoader.copyDbs()
 
-        def date = Utils.getCurrentDate()
+
 
         def mongoDb = dbLoader.getOnlineDb()
         baikeCl = mongoDb.getCollection("baike");
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
 
-        def sql_id_list = "select * from poem where _id >=17318 and _id<=50000 "
+        def sql_id_list = "select * from poem where _id >0 and _id<=300000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
             def pauthor = row["zuozhe"]
             def pid = row["_id"]
+
+            def time = Utils.getCurentTime('yyyy-MM-dd HH:mm:ss')
+
             def datamap = [:]
             datamap['pid'] = pid
             datamap['zuozhe'] = pauthor
             datamap['mingcheng'] = pname
-            datamap['date'] = date
+            datamap['date'] = time
             datamap['category'] = category
 
+
+            if (isPidExist(pid)) {
+                println '[' + pid + ']' + pname + ' exist!'
+                return
+            }
+
             println 'pid:' + pid + ', zuozhe:' + pauthor + ', pname:' + pname
+
+
             boolean succeed = requestWord(pid, pauthor, pname, datamap)
 
             if (!succeed) {
@@ -64,6 +76,18 @@ class BaiduBaike2Loader {
         //doRequestWord('五弦弹－恶郑之夺雅也')
 
         writeErrors()
+    }
+
+    boolean isPidExist(pid) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("pid", pid.toString());
+
+        def pidFind = baikeCl.find(query)
+        //println 'pidFind.size:'+pidFind.size()
+        if (pidFind.size() == 0) {
+            return false
+        }
+        return true;
     }
 
     void writeErrors() {
@@ -85,6 +109,8 @@ class BaiduBaike2Loader {
             if (succeed) {
                 return true
             }
+
+
             def names = newName.split('·')
 
             names.each { name ->
@@ -109,8 +135,31 @@ class BaiduBaike2Loader {
                 }
 
             }
+            if (succeed) {
+                return true
+            }
 
+            names = newName.split(' ')
+            names.each { name ->
+                if (name != pname) {
+                    succeed = succeed || doRequestWord(pid, pauthor, name, datamap)
+                }
 
+            }
+            if (succeed) {
+                return true
+            }
+
+            names = newName.split('　')
+            names.each { name ->
+                if (name != pname) {
+                    succeed = succeed || doRequestWord(pid, pauthor, name, datamap)
+                }
+
+            }
+            if (succeed) {
+                return true
+            }
         }
 
         if (!succeed) {
@@ -160,7 +209,7 @@ class BaiduBaike2Loader {
         }
         datamap['errors'] << errormap
 
-        def text = Utils.getUrlTextContent(rootDir, url);
+        def text = Utils.getUrlTextContent(rootDir, url, errormap);
         println 'doRequestWord:' + word
         if (!text || text.contains('百度百科错误页') && text.contains('您所访问的页面不存在')) {
             onError(category, '百科没有本词条', 1, errormap)
