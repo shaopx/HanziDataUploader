@@ -12,10 +12,11 @@ class UploadTangshijianshangToDb {
 
     def rootPath ="C:\\Dev\\data\\poem\\tagnshijianshang\\root\\"
     def dir = new File(rootPath)
+    def dbLoader =GroovyDataLoader.instance
 
     void upload(){
-        def db = new GroovyDataLoader().connectToDb()
-        tsjsCollection = db.getCollection("tsjs");
+        def mongoDb = dbLoader.getOnlineDb()
+        tsjsCollection = mongoDb.getCollection("tsjs");
 
         if (dir.isDirectory()) {
             dir.eachFileRecurse { file ->

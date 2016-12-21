@@ -14,12 +14,12 @@ import javax.crypto.spec.SecretKeySpec
 class PutAllTogether {
 
     MongoCollection<Document> tsjsCollection;
-
+    MongoCollection<Document> poemCollection
 
     def cols = ['_id', 'mingcheng', 'zuozhe', 'shipin', 'ticai', 'chaodai', 'guojia', 'fenlei', 'jieduan', 'keben', 'congshu', 'chuchu', 'zhaiyao', 'yuanwen']
 
 
-    def dbLoader = new GroovyDataLoader()
+    def dbLoader =GroovyDataLoader.instance
 
 
     def perform() {
@@ -27,8 +27,8 @@ class PutAllTogether {
         dbLoader.copyDbs()
 
         def mongoDb = dbLoader.getOnlineDb()
-        MongoCollection<Document> poemCollection = mongoDb.getCollection("poem");
-        tsjsCollection = db.getCollection("tsjs");
+        poemCollection = mongoDb.getCollection("poem");
+        tsjsCollection = mongoDb.getCollection("tsjs");
 
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
@@ -42,7 +42,7 @@ class PutAllTogether {
 
         def count = 0
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >0 "
+        def sql_id_list = "select * from poem where _id >=100343 "
 
         sql_poem.eachRow(sql_id_list) {
             row ->
@@ -108,7 +108,7 @@ class PutAllTogether {
 
                     def tsjsfind = tsjsCollection.find(tsjsQuery)
                     String tsjsshangxi = ""
-                    println "tsjsfind.getName() :"+tsjsfind.getClass().getName()
+                    //println "tsjsfind.getName() :"+tsjsfind.getClass().getName()
                     if (tsjsfind.size() != 0) {
                         MongoCursor<Document> cursor = tsjsfind.iterator();
                         try {
