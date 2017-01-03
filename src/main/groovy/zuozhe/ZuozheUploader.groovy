@@ -30,14 +30,15 @@ class ZuozheUploader {
         sql_poem.eachRow(sql_id_list) { row ->
             def pauthor = row["xingming"]
             def pjieshao = row["jieshao"]
-            def pid = row["_id"]
+            def id = row["_id"]
 
             def time = Utils.getCurentTime('yyyy-MM-dd HH:mm:ss')
 
             def datamap = [:]
-            datamap['zhuozhe_id'] = pid
-            datamap['zuozhe'] = pauthor
+            datamap['zid'] = id
+            datamap['xingming'] = pauthor
             datamap['jieshao'] = pjieshao
+            datamap['src'] = '<<古诗词典>>'
             datamap['date'] = time
 
             saveWord(datamap)
