@@ -15,6 +15,7 @@ class PutAllTogether {
 
     MongoCollection<Document> tsjsCollection;
     MongoCollection<Document> poemCollection
+    MongoCollection<Document> shangxiCollection
 
     def cols = ['_id', 'mingcheng', 'zuozhe', 'shipin', 'ticai', 'chaodai', 'guojia', 'fenlei', 'jieduan', 'keben', 'congshu', 'chuchu', 'zhaiyao', 'yuanwen']
 
@@ -29,6 +30,7 @@ class PutAllTogether {
         def mongoDb = dbLoader.getOnlineDb()
         poemCollection = mongoDb.getCollection("poem");
         tsjsCollection = mongoDb.getCollection("tsjs");
+        shangxiCollection = mongoDb.getCollection("shangxi");
 
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
@@ -42,7 +44,7 @@ class PutAllTogether {
 
         def count = 0
         BasicDBObject query = new BasicDBObject();
-        def sql_id_list = "select * from poem where _id >=100343 "
+        def sql_id_list = "select * from poem where _id >=0 "
 
         sql_poem.eachRow(sql_id_list) {
             row ->
@@ -54,8 +56,11 @@ class PutAllTogether {
                 def find = poemCollection.find(query)
 
                 if (find.size() == 0) {
+                    Document shangxiDocument = new Document();
                     Document document = new Document();
                     document.append("pid", "" + row["_id"]);
+
+
                     cols.each { col ->
                         if (col != '_id')
                             document.append("$col", "" + row[col]);
@@ -88,8 +93,9 @@ class PutAllTogether {
 //                    BasicDBList shagnxiList = new BasicDBList();
                     if(shangxi.length()>0){
                         Document shangxidata = new Document();
-                        shangxidata.put("shangxi", shangxi)
+                        shangxidata.put("shangxi", shangxi.trim())
                         shangxidata.put("src", " gscd")
+                        shangxidata.put("srcDesc", "古诗词典")
                         shagnxiList.add(shangxidata)
 
                     }
@@ -123,14 +129,23 @@ class PutAllTogether {
 
                         if(tsjsshangxi.length()>0){
                             Document shangxidata = new Document();
-                            shangxidata.put("shangxi", tsjsshangxi)
-                            shangxidata.put("src", " tsjs")
+                            shangxidata.put("shangxi", tsjsshangxi.trim())
+                            shangxidata.put("src", "tsjs")
+                            shangxidata.put("srcDesc", "唐诗鉴赏词典")
                             shagnxiList.add(shangxidata)
                         }
 
                         //println tsjsshangxi
                     }
-                    document.append("shangxis", shagnxiList);
+                    //document.append("shangxis", shagnxiList);
+
+                    shagnxiList.forEach(){ doc->
+                        doc.append("pid", "" + row["_id"]);
+                        doc.append("name", "" + pname);
+                        doc.append("author", "" + pauthor);
+                        doc.append("yuanwen", "" + yuanwen);
+                        shangxiCollection.insertOne(doc)
+                    }
 
                     poemCollection.insertOne(document);
                 } else {
