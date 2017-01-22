@@ -7,6 +7,7 @@ import groovy.json.JsonSlurper
 import groovy.sql.Sql
 import org.bson.Document
 import util.ParseUtils
+import util.Utils
 
 /**
  * Created by SHAOPENGXIANG on 2017/1/22.
@@ -43,7 +44,7 @@ class XiGuUploader2 {
 
     }
 
-    def getPid(pname, pauthor) {
+    def getPid(pname, pauthor, yuanwen) {
         String name = pname.toString()
         def ns = name.tokenize("·，,.-")
         String condition = ""
@@ -62,11 +63,18 @@ class XiGuUploader2 {
         def pids = []
         sql_poem.eachRow(sql_id_list) { row ->
             def pid = row["_id"]
+            def yuanwen2 = row["yuanwen"]
             if (!(pid in pids)) {
-                pids << pid
+                if(like(yuanwen, yuanwen2)){
+                    pids<<pid
+                }
             }
         }
         return pids
+    }
+
+    boolean like(yuanwen1, yuanwen2){
+        return Utils.sim(yuanwen1, yuanwen2)>0.5
     }
 
     boolean insertOnePoem(pname, pauthor, fileJson) {
