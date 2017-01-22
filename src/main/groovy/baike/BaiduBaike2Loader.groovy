@@ -34,13 +34,12 @@ class BaiduBaike2Loader {
         dbLoader.copyDbs()
 
 
-
         def mongoDb = dbLoader.getOnlineDb()
         baikeCl = mongoDb.getCollection("baike");
 
         def sql_poem = Sql.newInstance("jdbc:sqlite:poem.db", "", "", "org.sqlite.JDBC")
 
-        def sql_id_list = "select * from poem where _id >0 and _id<=300000 "
+        def sql_id_list = "select * from poem where _id >98018 and _id<=300000 "
 
         sql_poem.eachRow(sql_id_list) { row ->
             def pname = row["mingcheng"]
